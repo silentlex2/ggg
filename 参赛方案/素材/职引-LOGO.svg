@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="职引 LOGO">
+  <defs>
+    <linearGradient id="brand" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5a4"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.28"/>
+      <stop offset="60%" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 圆角底 -->
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#brand)"/>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#shine)"/>
+
+  <!-- 罗盘外环 -->
+  <circle cx="256" cy="248" r="132" fill="none" stroke="#ffffff" stroke-opacity="0.9" stroke-width="16"/>
+  <!-- 刻度 -->
+  <g stroke="#ffffff" stroke-opacity="0.55" stroke-width="10" stroke-linecap="round">
+    <line x1="256" y1="104" x2="256" y2="130"/>
+    <line x1="256" y1="366" x2="256" y2="392"/>
+    <line x1="112" y1="248" x2="138" y2="248"/>
+    <line x1="374" y1="248" x2="400" y2="248"/>
+  </g>
+
+  <!-- 指针（向上的箭头，寓意“引”） -->
+  <path d="M256 148 L330 288 L256 258 L182 288 Z" fill="#ffffff"/>
+  <circle cx="256" cy="248" r="18" fill="#ffffff"/>
+
+  <!-- 底部文字 -->
+  <text x="256" y="446" text-anchor="middle"
+        font-family="PingFang SC, Microsoft YaHei, Noto Sans SC, sans-serif"
+        font-size="76" font-weight="700" fill="#ffffff" letter-spacing="6">职引</text>
+</svg>
