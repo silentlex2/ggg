@@ -237,6 +237,25 @@
     .mock-note { display: none; }
   }
 
+
+  /* ---------- 与平台输出对齐的样式（v2） ---------- */
+  .concl { background:#f0fdfa; border-left:3px solid var(--brand-1); border-radius:0 8px 8px 0;
+           padding:9px 11px; margin:4px 0 12px; font-size:12.5px; line-height:1.7; }
+  .concl b { color:#0f766e; }
+  .jobtable { width:100%; border-collapse:collapse; font-size:11.5px; margin:2px 0 10px; }
+  .jobtable th, .jobtable td { padding:7px 6px; border-bottom:1px solid #eef2f7;
+           text-align:left; vertical-align:top; }
+  .jobtable th { background:#f6fbfb; color:#0f766e; font-weight:600; white-space:nowrap; }
+  .jobtable td.idx { color:#94a3b8; font-weight:700; }
+  .jobtable td.sc { white-space:nowrap; font-weight:800; color:var(--brand-2); }
+  .jobtable .jn { font-weight:600; }
+  .jobtable .js { color:#94a3b8; font-size:10.5px; margin-top:2px; }
+  .tier { font-size:10px; font-weight:600; padding:1px 5px; border-radius:999px; margin-left:4px; }
+  .tier.ok { background:#dcfce7; color:#15803d; }
+  .tier.warn { background:#fef3c7; color:#b45309; }
+  .tier.bad { background:#fee2e2; color:#b91c1c; }
+  .retry { display:inline-block; margin-top:8px; padding:4px 10px; border-radius:999px;
+           background:#eef2ff; color:#3730a3; font-size:11.5px; font-weight:600; }
 </style>
 </head>
 <body>
@@ -246,7 +265,7 @@
     <div class="logo">🎯</div>
     <div class="meta">
       <h1>职引 · 校园就业智能体</h1>
-      <p><span class="status-dot"></span>在线 · 简历诊断 / 岗位匹配 / 模拟面试</p>
+      <p><span class="status-dot"></span>在线 · 简历诊断 / 岗位匹配 / 模拟面试 / 成长档案</p>
     </div>
   </div>
   <div class="chat" id="chat"></div>
@@ -267,8 +286,10 @@ const chipsEl = document.getElementById('chips');
 const inputEl = document.getElementById('input');
 const sendBtn = document.getElementById('send');
 
-const CHIPS = ['📄 帮我诊断简历', '🔍 帮我匹配岗位', '🎤 来一场模拟面试', '📋 三方协议怎么签？'];
+const CHIPS = ['📄 帮我诊断简历', '🔍 帮我匹配岗位', '🎤 来一场模拟面试',
+               '🔁 重练第 3 题', '📈 我的进步', '📋 三方协议怎么签？'];
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+let t0 = '';   /* 本轮用户输入，供场景内部取编号用 */
 
 /* ---------- 基础渲染 ---------- */
 function scrollDown() { requestAnimationFrame(() => chat.scrollTop = chat.scrollHeight); }
@@ -325,6 +346,7 @@ function animateBars(scope) {
 function reportResume() {
   return '<div class="report">'
     + '<div class="report-title">📊 简历诊断报告 <span class="tag">目标岗位：化工工艺工程师</span></div>'
+    + '<div class="concl"><b>一句话结论</b>：整体达标，最大短板是岗位关键词缺失——综合匹配度 72 分。</div>'
     + '<div class="big-score"><span class="num">72</span><span class="unit">/ 100 综合匹配度</span></div>'
     + metric('项目经历', 80, '有 2 段实习，但缺少量化结果')
     + metric('技能匹配', 60, '岗位要求 Aspen Plus，简历未体现')
@@ -345,29 +367,92 @@ function reportResume() {
     + '</div>';
 }
 
-/* ---------- 场景 2：岗位匹配 ---------- */
-function jobCard(name, sub, score, reason, gap) {
-  return '<div class="job">'
-    + '<div class="job-top">'
-    + '<div><div class="job-name">' + name + '</div><div class="job-sub">' + sub + '</div></div>'
-    + '<div class="job-score">' + score + '<small> 分</small></div>'
-    + '</div>'
-    + '<div class="job-line"><span class="k">✅ 匹配理由</span>：' + reason + '</div>'
-    + (gap ? '<div class="job-line"><span class="w">⚠️ 差距提示</span>：' + gap + '</div>' : '')
-    + '</div>';
+/* ---------- 场景 2：岗位匹配（表格版，与平台输出一致） ---------- */
+function tierOf(score) {
+  if (score >= 85) return '<span class="tier ok">优秀</span>';
+  if (score >= 70) return '<span class="tier warn">良好</span>';
+  return '<span class="tier bad">待改进</span>';
 }
 function reportJobs() {
+  const rows = [
+    ['1', '化工工艺工程师', '民营企业 · 重庆长寿', 88, '专业完全对口，化工原理与物料衡算匹配'],
+    ['2', '化工研发工程师', '民营企业 · 重庆涪陵', 82, '专业对口，有实验设计基础'],
+    ['3', '工艺安全分析师', '外资企业 · 重庆长寿', 76, '专业相关，安全方向需求增长'],
+    ['4', '电池测试工程师', '民营企业 · 重庆两江新区', 71, '新能源赛道与化工有交叉']
+  ];
+  let tbody = '';
+  rows.forEach(r => {
+    tbody += '<tr>'
+      + '<td class="idx">' + r[0] + '</td>'
+      + '<td><div class="jn">' + r[1] + '</div><div class="js">' + r[2] + '</div></td>'
+      + '<td class="sc">' + r[3] + tierOf(r[3]) + '</td>'
+      + '<td>' + r[4] + '</td>'
+      + '</tr>';
+  });
   return '<div class="report" style="padding:14px 13px">'
     + '<div class="report-title">🔍 为你匹配到 4 个岗位 <span class="tag">化学工程与工艺 · 重庆 · 校招</span></div>'
-    + jobCard('化工工艺工程师', '民营企业 · 重庆长寿 · 8-12万/年', 88,
-        '专业完全对口，化工原理与物料衡算能力匹配；建议补 Aspen Plus 项目经历', 'Aspen Plus、HAZOP')
-    + jobCard('化工研发工程师', '民营企业 · 重庆涪陵 · 9-14万/年', 82,
-        '专业对口，有实验设计基础；研发岗更看重实验设计与数据分析能力', '正交实验设计、XRD/SEM 表征')
-    + jobCard('工艺安全分析师', '外资企业 · 重庆长寿 · 10-15万/年', 76,
-        '专业相关，安全方向近年需求增长明显，且门槛低于研发岗', 'HAZOP 分析经验、SIL 评估')
-    + jobCard('电池测试工程师', '民营企业 · 重庆两江新区 · 9-13万/年', 71,
-        '新能源赛道与化工专业有交叉，重庆本地岗位充足', '电池测试设备、数据采集工具')
-    + '<div class="src">📚 依据：岗位 JD 库（45 条）· 匹配度 = 专业相关度 40% + 技能命中 35% + 偏好 15% + 经历 10%</div>'
+    + '<div class="concl"><b>一句话结论</b>：专业对口度高、本地岗位充足，最需要补的是 Aspen Plus 与 HAZOP。</div>'
+    + '<table class="jobtable"><thead><tr>'
+    + '<th>#</th><th>岗位</th><th>匹配度</th><th>关键匹配理由</th>'
+    + '</tr></thead><tbody>' + tbody + '</tbody></table>'
+    + '<div class="tip" style="background:#fff7ed;border-left-color:#f59e0b">'
+    + '<b>前 2 名的差距提示</b><br>'
+    + '① 化工工艺工程师：缺 Aspen Plus 全流程模拟、HAZOP 认知<br>'
+    + '② 化工研发工程师：缺正交实验设计与 XRD/SEM 表征经历</div>'
+    + '<div class="src">📚 依据：岗位 JD 库（65 条，数据截至 2026-09）· '
+    + '匹配度 = 专业相关度 40% + 技能命中 35% + 加分技能 10% + 基准 15%<br>'
+    + '💡 回复上面的岗位编号（如「1」）可查看岗位详情</div>'
+    + '</div>';
+}
+
+/* ---------- 场景 2b：岗位详情下钻 ---------- */
+function jobDetail(n) {
+  const db = {
+    '1': ['化工工艺工程师', '民营企业 · 重庆长寿', '8-12万/年',
+      '最看重工艺流程模拟能力与现场问题处理经验',
+      ['学历 本科 · 校招 · 化学工程与工艺/应用化学',
+       '必备技能 化工原理、物料衡算、Aspen Plus、AutoCAD、工艺流程',
+       '加分技能 HAZOP、PID 识图、GB50160、设备选型'],
+      ['把课程设计写成「完成甲醇合成工段全流程模拟，物料衡算误差 &lt;3%」',
+       '把 Aspen Plus 的使用场景写具体：精馏塔参数优化、能耗对比']],
+    '2': ['化工研发工程师', '民营企业 · 重庆涪陵', '9-14万/年',
+      '最看重实验设计能力与数据整理规范性',
+      ['学历 本科及以上 · 校招 · 化学工程与工艺/应用化学/材料类',
+       '必备技能 实验设计、正交实验、数据分析、文献调研、Origin',
+       '加分技能 XRD、SEM、GC-MS、专利撰写'],
+      ['补一段「用正交实验优化配方，把收率从 X 提升到 Y」的经历',
+       '把实验数据整理能力写成产出：实验报告、数据处理脚本']],
+    '3': ['工艺安全分析师', '外资企业 · 重庆长寿', '10-15万/年',
+      '最看重安全规范认知与风险识别能力',
+      ['学历 本科 · 校招 · 化学工程与工艺/安全工程',
+       '必备技能 安全法规、危险源辨识、HAZOP、风险评估',
+       '加分技能 SIL 评估、双重预防机制、注册安全工程师（在考）'],
+      ['把课程里的安全相关内容写进简历：化工安全、过程安全分析',
+       '补一段风险识别的实践：实验室安全检查、隐患排查']],
+    '4': ['电池测试工程师', '民营企业 · 重庆两江新区', '9-13万/年',
+      '最看重测试数据采集与分析能力',
+      ['学历 本科 · 校招 · 化学工程与工艺/材料类/电气类',
+       '必备技能 电池基础知识、测试设备操作、数据采集与分析',
+       '加分技能 充放电测试、Excel/Python 数据处理、失效分析'],
+      ['补一段设备操作经历，写清测试项目与数据量',
+       '把数据分析能力写成产出：处理 X 组数据、输出报告']]
+  };
+  const d = db[n];
+  if (!d) {
+    return '第 ' + n + ' 个岗位不在本次匹配结果里哦（本次共 4 个）。回复 1–4 之间的编号即可。';
+  }
+  let req = '';
+  d[4].forEach(x => { req += '· ' + x + '<br>'; });
+  let todo = '';
+  d[5].forEach((x, i) => { todo += (i + 1) + '. ' + x + '<br>'; });
+  return '<div class="report">'
+    + '<div class="report-title">📌 ' + d[0] + ' <span class="tag">' + d[1] + '</span></div>'
+    + '<div class="concl"><b>一句话结论</b>：' + d[3] + '</div>'
+    + '<div style="font-size:12.5px;line-height:1.9"><b>硬性要求</b><br>' + req + '</div>'
+    + '<div class="tip"><b>你需要在简历里体现</b><br>' + todo + '</div>'
+    + '<div style="font-size:12px;color:#64748b;margin-top:8px">薪资参考：' + d[2]
+    + '　数据更新：2026-09</div>'
+    + '<div class="src">📚 依据：校内岗位库 岗位编号 ' + n + '</div>'
     + '</div>';
 }
 
@@ -381,6 +466,7 @@ function interviewOpening() {
 function interviewReview() {
   return '<div class="report">'
     + '<div class="report-title">🎯 模拟面试复盘 <span class="tag">化工工艺工程师</span></div>'
+    + '<div class="concl"><b>一句话结论</b>：表达稳、态度好，专业度是明显短板（62 分）。</div>'
     + '<div class="big-score"><span class="num">74</span><span class="unit">/ 100 本次得分</span></div>'
     + metric('逻辑性', 80, '回答有结构，但结论前置不够')
     + metric('专业度', 62, '第 3 题「精馏回流比」回答偏浅')
@@ -425,6 +511,57 @@ function policyAnswer() {
 }
 
 
+/* ---------- 场景 3b：重练第 N 题 ---------- */
+function retryQuestion(n) {
+  const bank = {
+    '1': ['自我介绍', '请用 2 分钟做一个自我介绍。'],
+    '2': ['专业能力', '请解释精馏塔回流比如何影响分离效果与能耗？'],
+    '3': ['专业能力', '说说你在课程设计中是怎么做物料衡算的。'],
+    '4': ['行为面试', '讲一次你在团队里推动别人配合你的经历。'],
+    '5': ['岗位理解', '你为什么选择工艺工程师这个方向？']
+  };
+  const q = bank[n];
+  if (!q) return '本次面试共 5 道题，回复「重练第 1」到「重练第 5」之间的编号即可。';
+  const last = {
+    '3': ['「回流比越大分离越好」', 62, '只答了一半，没提能耗代价']
+  }[n] || ['（本题未作答或已达标）', 78, '结构可以，但缺少量化结果'];
+  return '<div class="report">'
+    + '<div class="report-title">🔁 重练第 ' + n + ' 题 <span class="tag">' + q[0] + '</span></div>'
+    + '<div class="concl"><b>上次回顾</b>：你答的是 ' + last[0] + '，得分 ' + last[1]
+    + '，主要问题是 ' + last[2] + '。</div>'
+    + '<div style="font-size:13.5px;line-height:1.9"><b>这次我们再来一遍——</b><br><br>' + q[1] + '</div>'
+    + '<div class="src">📚 依据：面试题库（' + q[0] + '）· 重练结果将覆盖该题历史记录</div>'
+    + '</div>';
+}
+
+/* ---------- 场景 5：成长档案 / 进步对比（长期记忆） ---------- */
+function progressReport() {
+  return '<div class="report">'
+    + '<div class="report-title">📈 你的进步 <span class="tag">化工工艺工程师</span></div>'
+    + '<div class="concl"><b>一句话结论</b>：两周内技能匹配从 60 提升到 78，量化结果从 1 条增加到 4 条。</div>'
+    + metric('技能匹配', 78, '上次 60 → 本次 78，▲+18')
+    + metric('项目经历', 84, '上次 72 → 本次 84，▲+12')
+    + metric('表达规范', 74, '上次 78 → 本次 74，▼-4（新增内容表述偏冗长）')
+    + metric('排版格式', 90, '与上次持平')
+    + '<div class="tip" style="background:#f0fdf4;border-left-color:#10b981">'
+    + '<b>进步最大的点</b>：项目经历已补充量化结果（本次 4 条），'
+    + '「优化接口性能」这类模糊表述全部替换为带数字的句式。</div>'
+    + '<div class="tip" style="background:#fff7ed;border-left-color:#f59e0b">'
+    + '<b>需要保持注意</b>：新增内容让表达规范从 78 降到 74，'
+    + '建议把长句拆成「动作 + 结果」两段。</div>'
+    + '<div class="src">📚 依据：长期记忆库（学生成长档案）· 对比区间 2026-09-24 ~ 2026-10-08</div>'
+    + '</div>';
+}
+
+/* ---------- 场景 6：异常兜底演示（库外问题 / 越界编号 / 空输入） ---------- */
+function outOfScope() {
+  return '这个问题我暂时没有权威依据，建议直接咨询学校招生就业处，以免信息有误。\n\n'
+    + '我可以帮你的是：📄 简历诊断　🔍 岗位匹配　🎤 模拟面试　📋 就业政策咨询。';
+}
+function badIndex(n) {
+  return '本次匹配结果一共 4 个岗位，没有第 ' + n + ' 个哦。回复 1–4 之间的编号即可查看详情。';
+}
+
 /* ---------- 场景路由 ---------- */
 const SCENES = [
   { keys: ['简历', '诊断', '优化简历', '改简历', 'resume'], run: async () => {
@@ -452,6 +589,20 @@ const SCENES = [
   { keys: ['三方', '协议', '档案', '报到证', '合同', '试用期', '社保', '应届'], run: async () => {
       await showTyping(800);
       addBot(policyAnswer(), true);
+  }},
+  { keys: ['重练', '再来一遍', 'retry'], run: async () => {
+      await showTyping(800);
+      const m = t0.match(/[1-5]/);
+      addBot(retryQuestion(m ? m[0] : '3'), true);
+  }},
+  { keys: ['进步', '成长', '历史', '上次', '记录'], run: async () => {
+      await showTyping(900);
+      const row = addBot(progressReport(), true);
+      animateBars(row);
+  }},
+  { keys: ['食堂', '天气', '几点开门', '宿舍', '公交'], run: async () => {
+      await showTyping(700);
+      addBot(outOfScope());
   }}
 ];
 
@@ -461,10 +612,23 @@ function pickScene(text) {
   return null;
 }
 
+/* 数字编号 = 岗位详情下钻（对应 04 §4.7） */
+function isJobIndex(text) { return /^\s*[1-9]\d*\s*$/.test(text); }
+
 async function handle(text) {
   if (!text.trim()) return;
   addUser(text);
   inputEl.value = '';
+  t0 = text;
+
+  /* 优先判定“岗位编号”，实现下钻闭环 */
+  if (isJobIndex(text)) {
+    const n = parseInt(text.trim(), 10);
+    await showTyping(800);
+    addBot(n >= 1 && n <= 4 ? jobDetail(String(n)) : badIndex(n), true);
+    return;
+  }
+
   const scene = pickScene(text);
   if (scene) { await scene.run(); }
   else {
