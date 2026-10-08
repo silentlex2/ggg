@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="900" viewBox="0 0 1200 900" role="img" aria-label="职引 会话背景">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f6fbfb"/>
+      <stop offset="100%" stop-color="#eef4ff"/>
+    </linearGradient>
+    <linearGradient id="soft" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0ea5a4" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0.10"/>
+    </linearGradient>
+    <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0ea5a4" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#2563eb" stop-opacity="0.35"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="900" fill="url(#bg)"/>
+
+  <!-- 柔和的装饰形状（低对比，不抢文字） -->
+  <circle cx="140" cy="120" r="220" fill="url(#soft)"/>
+  <circle cx="1080" cy="780" r="280" fill="url(#soft)"/>
+  <circle cx="980" cy="140" r="110" fill="url(#soft)"/>
+
+  <!-- 右上角淡淡的罗盘轮廓 -->
+  <g opacity="0.16" fill="none" stroke="#2563eb" stroke-width="10">
+    <circle cx="1010" cy="180" r="96"/>
+    <path d="M1010 104 L1054 220 L1010 200 L966 220 Z" fill="#2563eb" stroke="none"/>
+  </g>
+
+  <!-- 底部渐变线 -->
+  <rect x="0" y="876" width="1200" height="24" fill="url(#line)"/>
+
+  <!-- 右下角小字品牌 -->
+  <text x="1152" y="852" text-anchor="end"
+        font-family="PingFang SC, Microsoft YaHei, Noto Sans SC, sans-serif"
+        font-size="26" fill="#2563eb" fill-opacity="0.35" letter-spacing="3">职引 · 校园就业智能体</text>
+</svg>
