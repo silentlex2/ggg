@@ -1,0 +1,86 @@
+[
+  [
+    "pc-config",
+    "/api/pc/config",
+    200,
+    "code=1 data.keys=['domain', 'login', 'website', 'siteStatistics', 'version', 'copyright']"
+  ],
+  [
+    "index-policy",
+    "/api/index/policy",
+    200,
+    "code=1 data.keys=['title', 'content']"
+  ],
+  [
+    "page-home",
+    "/api",
+    200,
+    "code=1 data.keys=['page', 'article']"
+  ],
+  [
+    "banner-lists",
+    "/api/comp.banner/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "news-lists",
+    "/api/comp.news/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "notice-lists",
+    "/api/comp.notice/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "material-lists",
+    "/api/comp.material/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "recruit-lists",
+    "/api/comp.recruit/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "showcase-lists",
+    "/api/comp.showcase/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "guide-lists",
+    "/api/comp.guide/lists",
+    200,
+    "code=1 data.keys=['lists', 'count', 'page_no', 'page_size', 'extend']"
+  ],
+  [
+    "workcate-options",
+    "/api/comp.workCate/options",
+    200,
+    "code=1 data.keys=['lists']"
+  ],
+  [
+    "college-options",
+    "/api/comp.college/options",
+    200,
+    "code=1 data.keys=['lists']"
+  ],
+  [
+    "recruit-topic",
+    "/api/comp.recruit/topicSetting",
+    200,
+    "code=1 data.keys=['publish_start', 'publish_end', 'publish_start_text', 'publish_end_text', 'configured', 'is_open']"
+  ],
+  [
+    "search-index",
+    "/api/comp.search/index",
+    200,
+    "code=0 data=list[0]"
+  ]
+]

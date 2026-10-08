@@ -1,0 +1,1 @@
+import{bP as n}from"./entry.2d897bb2.js";const r=()=>{var s;const e=(((s=n().app)==null?void 0:s.baseURL)||"/").replace(/\/$/,"");return{asset:o=>{const t=o.replace(/^\//,"");return`${e}/aiyigou/${t}`}}};export{r as u};

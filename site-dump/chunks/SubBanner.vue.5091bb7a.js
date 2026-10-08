@@ -1,0 +1,1 @@
+import{u as e}from"./useAiyigouAsset.0ac7a6ce.js";import{f as a,o as n,c as o,a as t,h as r}from"./entry.2d897bb2.js";const c={class:"subbanner"},_=["src"],b=a({__name:"SubBanner",setup(i){const{asset:s}=e();return(m,u)=>(n(),o("div",c,[t("img",{src:r(s)("images/subbanner.webp"),class:"img",alt:""},null,8,_)]))}});export{b as _};

@@ -1,0 +1,46 @@
+OK   /api/pc/config  863B
+OK   /api/index/policy  61B
+OK   /api  4021B
+OK   /api/comp.workCate/options  195B
+OK   /api/comp.college/options  2131B
+OK   /api/comp.recruit/topicSetting  256B
+OK   /api/comp.banner/lists?page_no=1&page_size=200  277B
+OK   /api/comp.news/lists?page_no=1&page_size=200  605B
+OK   /api/comp.notice/lists?page_no=1&page_size=200  15559B
+OK   /api/comp.material/lists?page_no=1&page_size=200  4243B
+OK   /api/comp.guide/lists?page_no=1&page_size=200  5185B
+OK   /api/comp.recruit/lists?page_no=1&page_size=200  98B
+OK   /api/comp.showcase/lists?page_no=1&page_size=200  98B
+OK   /api/comp.showcase/lists?page_no=1&page_size=200&showcase_cate=award  98B
+OK   /api/comp.showcase/lists?page_no=1&page_size=200&showcase_cate=dept  98B
+OK   /api/comp.news/detail?id=1  543B
+OK   /api/comp.notice/detail?id=7  399B
+OK   /api/comp.notice/detail?id=6  3509B
+OK   /api/comp.notice/detail?id=1  11659B
+OK   /api/comp.material/detail?id=10  508B
+OK   /api/comp.material/detail?id=9  588B
+OK   /api/comp.material/detail?id=8  556B
+OK   /api/comp.material/detail?id=7  562B
+OK   /api/comp.material/detail?id=6  571B
+OK   /api/comp.material/detail?id=5  544B
+OK   /api/comp.material/detail?id=4  530B
+OK   /api/comp.material/detail?id=3  708B
+OK   /api/comp.material/detail?id=2  554B
+OK   /api/comp.material/detail?id=1  486B
+OK   /api/comp.guide/detail?id=1  896B
+OK   /api/comp.guide/detail?id=2  1033B
+OK   /api/comp.guide/detail?id=3  868B
+OK   /api/comp.guide/detail?id=4  1174B
+OK   /api/comp.guide/detail?id=5  1292B
+OK asset http://aiac.cqut.edu.cn:3090/resource/image/adminapi/default/shop_logo.png -> assets/images/resource/image/adminapi/default/shop_logo.png (2651B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260915/20260915150702df6d91567.pdf -> assets/files/uploads/file/20260915/20260915150702df6d91567.pdf (828165B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260915/20260915150828b6a468605.pdf -> assets/files/uploads/file/20260915/20260915150828b6a468605.pdf (817194B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260917/2026091714363635d5c3702.pdf -> assets/files/uploads/file/20260917/2026091714363635d5c3702.pdf (557153B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260917/202609171437018e8f85934.pdf -> assets/files/uploads/file/20260917/202609171437018e8f85934.pdf (902488B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260920/20260920150451a96b89185.docx -> assets/files/uploads/file/20260920/20260920150451a96b89185.docx (43920B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260924/20260924102044c59e90534.docx -> assets/files/uploads/file/20260924/20260924102044c59e90534.docx (121063B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/file/20260929/20260929110533cf8534979.docx -> assets/files/uploads/file/20260929/20260929110533cf8534979.docx (26162336B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/images/20260717/20260717164602063d76791.png -> assets/images/uploads/images/20260717/20260717164602063d76791.png (44831B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/images/20260717/20260717170604412443357.png -> assets/images/uploads/images/20260717/20260717170604412443357.png (258163B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/images/20260727/20260727115201583fd1324.webp -> assets/images/uploads/images/20260727/20260727115201583fd1324.webp (39740B)
+OK asset http://aiac.cqut.edu.cn:3090/uploads/images/20260923/20260923182946ca4a77299.webp -> assets/images/uploads/images/20260923/20260923182946ca4a77299.webp (559832B)
