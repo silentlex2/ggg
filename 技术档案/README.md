@@ -42,7 +42,7 @@
 | --- | --- |
 | `graph_backup_20261010.json` | 拆死链前的完整图，29 节点。要还原就把里面的 `graph` 存回草稿 |
 | `srcdraft.json` | 某次保存的工作应用草稿全量，用来离线翻结构 |
-| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`（2026-10-11 起）~~ → **`tZ9PTLM9GtKcn3Ci`（2026-10-14 起，材料正式地址）** |
+| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → **`vBP7v5MWoBA6yCPt`（2026-10-14 最终版，材料正式地址）** |
 
 ## scratch/
 
