@@ -61,7 +61,7 @@
 | --- | --- |
 | `graph_backup_20261010.json` | 拆死链前的完整图，29 节点。要还原就把里面的 `graph` 存回草稿 |
 | `srcdraft.json` | 某次保存的工作应用草稿全量，用来离线翻结构 |
-| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2/v3，已关站）~~ → ~~`jb3VQ96s2Vmv5aP4`（v4，岗位库 rerank，留作回退）~~ → ~~`3dx3j3cacsfYdLe8`（v5，留作回退）~~ → **`g2XDtP2IvbgTKh8k`（2026-10-14 v6：v5 全套提示词 + 评分总分挪到分项之后）** |
+| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2/v3，已关站）~~ → ~~`jb3VQ96s2Vmv5aP4`（v4，岗位库 rerank，留作回退）~~ → ~~`3dx3j3cacsfYdLe8`（v5，留作回退）~~ → ~~`g2XDtP2IvbgTKh8k`（v6，评分总分挪到分项之后，留作回退）~~ → **`j5qWmoi0m0UYWDpj`（2026-10-14 v7：v6b 技能证据纪律 / 时效说明 / 专业兜底 / 来源冲突裁决）** |
 
 ## scratch/
 
@@ -81,6 +81,11 @@
   之后在同一个 app 上重新 publish，`app.workflow.id` 会更新，但站点仍跑旧版本；
   关站再开也不重新绑定；等 10 分钟也不是缓存问题。**想上线新配置只能重新复制应用、换站点码。**
   （这条来回翻了两次，所以关键结论一定要写成"在什么条件下成立"，别只写结论。）
+- **钉死的不只是工作流图，还有 `features`**（2026-10-14 实测）：开场白、预置问题、文件上传白名单
+  都存在草稿的 `features` 字段里（**不在草稿顶层，也不在 `app.site`**，`app.site.opening_statement` 是空串）。
+  改 `features.opening_statement` → save → publish 全部 200，但站点 `GET /api/parameters`（需带 access_token）
+  返回的仍是旧开场白。**所以想改开场白/预置问题同样只能重新复制应用换站点码。**
+  副作用：站点的开场白不能用接口热更新，别在这个方向浪费时间。
 - 知识库重排（rerank）：4 个检索节点默认全是 `reranking_enable: false`，
   平台其实**提供** `bge-reranker-v2-m3`；开启后「岗位知识库」的召回排序有改善（v4 站点已启用）
 - **线上到底开的哪套检索，可以从回复里反推**（2026-10-14 实测确认）：
