@@ -265,7 +265,7 @@
     <div class="logo">🎯</div>
     <div class="meta">
       <h1>职引 · 校园就业智能体</h1>
-      <p><span class="status-dot"></span>在线 · 简历诊断 / 岗位匹配 / 模拟面试 / 成长档案</p>
+      <p><span class="status-dot"></span>在线 · 简历诊断 / 岗位匹配 / 模拟面试 / 政策咨询</p>
     </div>
   </div>
   <div class="chat" id="chat"></div>
@@ -346,7 +346,7 @@ function animateBars(scope) {
 function reportResume() {
   return '<div class="report">'
     + '<div class="report-title">📊 简历诊断报告 <span class="tag">目标岗位：化工工艺工程师</span></div>'
-    + '<div class="concl"><b>一句话结论</b>：整体达标，最大短板是岗位关键词缺失——综合匹配度 72 分。</div>'
+    + '<div class="concl"><b>一句话结论</b>：整体达标，最大短板是岗位关键词缺失。</div>'
     + '<div class="big-score"><span class="num">72</span><span class="unit">/ 100 综合匹配度</span></div>'
     + metric('项目经历', 80, '有 2 段实习，但缺少量化结果')
     + metric('技能匹配', 60, '岗位要求 Aspen Plus，简历未体现')
@@ -466,7 +466,7 @@ function interviewOpening() {
 function interviewReview() {
   return '<div class="report">'
     + '<div class="report-title">🎯 模拟面试复盘 <span class="tag">化工工艺工程师</span></div>'
-    + '<div class="concl"><b>一句话结论</b>：表达稳、态度好，专业度是明显短板（62 分）。</div>'
+    + '<div class="concl"><b>一句话结论</b>：表达稳、态度好，专业度是明显短板。</div>'
     + '<div class="big-score"><span class="num">74</span><span class="unit">/ 100 本次得分</span></div>'
     + metric('逻辑性', 80, '回答有结构，但结论前置不够')
     + metric('专业度', 62, '第 3 题「精馏回流比」回答偏浅')
@@ -534,7 +534,7 @@ function retryQuestion(n) {
     + '</div>';
 }
 
-/* ---------- 场景 5：成长档案 / 进步对比（长期记忆） ---------- */
+/* ---------- 场景 5：成长档案 / 进步对比 —— 🔴 已废弃（依赖长期记忆，平台后端不完整），仅作界面参照，不要拿去讲 ---------- */
 function progressReport() {
   return '<div class="report">'
     + '<div class="report-title">📈 你的进步 <span class="tag">化工工艺工程师</span></div>'
