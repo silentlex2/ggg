@@ -62,6 +62,10 @@ def push(app, body_file):
     if "graph" not in body:
         body = body_of(body)
     d = api("/console/api/apps/%s/workflows/draft" % app, "POST", body)
+    # 保存接口不一定回传 graph（本平台只回简单结构），所以保存后再拉一次确认
+    nn = (d.get("graph") or {}).get("nodes")
+    if nn is None:
+        d = api("/console/api/apps/%s/workflows/draft" % app)
     print("saved hash=%s nodes=%d" % (d.get("hash"), len(d["graph"]["nodes"])))
     return d
 

@@ -61,7 +61,7 @@
 | --- | --- |
 | `graph_backup_20261010.json` | 拆死链前的完整图，29 节点。要还原就把里面的 `graph` 存回草稿 |
 | `srcdraft.json` | 某次保存的工作应用草稿全量，用来离线翻结构 |
-| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2，已弃用）~~ → **`jb3VQ96s2Vmv5aP4`（2026-10-14 v4：由旧应用复制而来，新增岗位知识库 rerank 重排）** |
+| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2/v3，已关站）~~ → ~~`jb3VQ96s2Vmv5aP4`（v4，岗位库 rerank，留作回退）~~ → ~~`3dx3j3cacsfYdLe8`（v5，留作回退）~~ → **`g2XDtP2IvbgTKh8k`（2026-10-14 v6：v5 全套提示词 + 评分总分挪到分项之后）** |
 
 ## scratch/
 
