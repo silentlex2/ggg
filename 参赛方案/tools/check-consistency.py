@@ -6,8 +6,9 @@
     python3 tools/check-consistency.py
 
 检查项（改完文档后跑一遍，避免口径漂移）：
-  A. 口径一致性：平台能力 16 项 / 高阶 8 项 / 答辩亮点 13 条 / 三大功能 + 1 加分项
-  B. 陈旧表述：不得出现 "12 项"、"四大功能"、"四项服务"、"待补充" 等旧口径
+  A. 口径一致性：平台能力 13 项 / 9 类平台节点 / 答辩亮点 13 条 / 三大功能 + 1 加分项
+  B. 陈旧表述：不得出现 "16 项"、"8 项高阶"、"NL2SQL" 等已废弃口径（行内含豁免词者除外）
+  H. 站点码一致：readysite.txt / finaltest_ready.py / make_qr.py 三处必须一致，且不得残留旧站点码
   C. 知识库：KB4 的 csv 与 md 条数/编号一致，且与各文档中的数字一致
   D. Markdown 结构：代码围栏成对、表格列数一致
   E. 交叉引用：README 文件清单与目录实际文件一致
@@ -54,11 +55,12 @@ def md_files():
 def check_terms():
     print('\n[A] 口径一致性')
     expect = {
-        '00-方案总览.md': ['16 项', '8 项为高阶'],
-        '05-工作流搭建手册（下）.md': ['16 项', '8 项为高阶能力', '13 条答辩亮点'],
-        '01-路演与答辩.md': ['16 项'],
-        '07-进阶能力实现.md': ['16 项'],
-        '06-作品打磨清单.md': ['16 项（8 项高阶）', '13 条'],
+        '00-方案总览.md': ['平台能力 = 13 项', '9 类平台节点'],
+        '05-工作流搭建手册（下）.md': ['平台能力 13 项', '9 类平台节点', '13 条答辩亮点'],
+        '01-路演与答辩.md': ['9 类平台节点、13 项能力'],
+        '02-提交材料清单.md': ['13 项能力', '9 类平台节点'],
+        '07-进阶能力实现.md': ['13 项'],
+        '06-作品打磨清单.md': ['13 项 / 9 类平台节点', '13 条'],
     }
     for fn, needles in expect.items():
         s = read(fn)
@@ -69,7 +71,13 @@ def check_terms():
             ok('%s 口径完整' % fn)
 
 
-STALE = ['12 个平台能力', '12 项平台能力', '四大功能', '四项服务', '待补充']
+STALE = ['12 个平台能力', '12 项平台能力', '四大功能', '待补充',
+         '16 项平台能力', '16 项能力', '8 项为高阶', '8 项高阶']
+
+# 行内出现这些词的行属于"回头看/已降级/实测结论"的说明，允许保留旧口径
+EXEMPT = ['早期', '旧口径', '已废弃', '降级', '未采用', '未落地', '没有进入最终版本',
+          '实测', '不再', '不要再提', '已被', '原计划', '原方案', '不要讲', '删除',
+          '已下线', '旧地址', '旧站点', '返回 404']
 
 
 def check_stale():
@@ -81,12 +89,14 @@ def check_stale():
         if 'site-dump' in rel0 or rel0.startswith('tools/') \
                 or rel0.startswith('09-官方要求核对表'):
             continue
-        s = io.open(p, encoding='utf-8').read()
-        for kw in STALE:
-            if kw in s:
-                hit.append('%s → %s' % (os.path.relpath(p, ROOT), kw))
+        for i, line in enumerate(io.open(p, encoding='utf-8').read().split('\n'), 1):
+            if any(e in line for e in EXEMPT):
+                continue
+            for kw in STALE:
+                if kw in line:
+                    hit.append('%s:%d → %s' % (os.path.relpath(p, ROOT), i, kw))
     if hit:
-        fail('发现陈旧表述：%s' % '；'.join(hit))
+        fail('发现陈旧表述：%s' % '；'.join(hit[:10]))
     else:
         ok('无陈旧表述')
 
@@ -148,7 +158,7 @@ def check_wordcount():
     s = read('02-提交材料清单.md')
     pats = [
         ('A', r'### 草稿 A · 作品简介（200 字内）\n\n(.*?)\n\n### 草稿 B', 200),
-        ('B', r'### 草稿 B · 设计思路与技术实现（1000 字内）— \*\*正式稿\*\*\n\n>.*?\n\n(.*?)\n\n### 草稿 C', 1000),
+        ('B', r'### 草稿 B · 设计思路与技术实现（1000 字内）— \*\*正式稿\*\*\n\n(.*?)\n\n### 草稿 C', 1000),
         ('C', r'### 草稿 C · 作品使用说明（300 字内）\n\n(.*?)\n\n---', 300),
     ]
     for name, pat, lim in pats:
@@ -156,11 +166,52 @@ def check_wordcount():
         if not m:
             fail('未找到草稿 %s' % name)
             continue
-        n = len(re.sub(r'\s', '', m.group(1)))
+        body = '\n'.join(l for l in m.group(1).split('\n') if not l.strip().startswith('>'))
+        n = len(re.sub(r'\s', '', body))
         if n <= lim:
             ok('草稿 %s：%d / %d 字' % (name, n, lim))
         else:
             fail('草稿 %s 超限：%d / %d 字' % (name, n, lim))
+
+
+SITES = {
+    '../技术档案/readysite.txt': None,
+    '../技术档案/finaltest_ready.py': r'SITE\s*=\s*"([^"]+)"',
+    '../技术档案/scratch/make_qr.py': r'chat/([A-Za-z0-9]+)',
+}
+# 站点生命周期台账：本来就该记录旧站点码，跳过
+SITE_LOG = ['运行状态与待办.md', '交接说明.md']
+DEAD_SITES = ['ncfAarVCvUUWO56e', 'vBP7v5MWoBA6yCPt', 'tZ9PTLM9GtKcn3Ci', '43898f25']
+
+
+def check_site():
+    print('\n[H] 站点码一致性')
+    import re as _re
+    found = {}
+    for rel, pat in SITES.items():
+        try:
+            s = read(rel)
+        except IOError:
+            warn('%s 不存在，跳过' % rel)
+            continue
+        m = _re.search(pat, s) if pat else None
+        v = m.group(1) if m else s.strip().splitlines()[0].strip()
+        found[rel] = v
+    vals = set(found.values())
+    if len(vals) == 1:
+        ok('三处站点码一致：%s' % vals.pop())
+    else:
+        fail('站点码不一致：%s' % found)
+    for p in md_files():
+        rel0 = os.path.relpath(p, ROOT).replace(os.sep, '/')
+        if rel0.startswith('tools/') or rel0 in SITE_LOG:
+            continue
+        for i, line in enumerate(io.open(p, encoding='utf-8').read().split('\n'), 1):
+            if any(e in line for e in EXEMPT):
+                continue
+            for d in DEAD_SITES:
+                if d in line:
+                    fail('%s:%d 残留已下线站点码 %s' % (rel0, i, d))
 
 
 def check_qa():
@@ -207,7 +258,7 @@ def check_kb():
         ('知识库/KB4-岗位JD库（知识库版）.md', r'共 \*\*(\d+)\*\* 个岗位'),
         ('知识库/README.md', r'岗位库共 \*\*(\d+)\*\* 条'),
         ('00-方案总览.md', r'(\d+) 条岗位'),
-        ('02-提交材料清单.md', r'（(\d+) 条岗位'),
+        ('02-提交材料清单.md', r'(\d+) 条岗位'),
         ('07-进阶能力实现.md', r'岗位库 \*\*(\d+) 条\*\*'),
         ('09-官方要求核对表.md', r'岗位库 (\d+) 条'),
         ('08-测试与验收.md', r'岗位库共 \*\*(\d+) 条\*\*'),
@@ -245,6 +296,7 @@ def main():
     check_refs()
     check_wordcount()
     check_qa()
+    check_site()
 
     print('\n' + '=' * 56)
     if fails:
