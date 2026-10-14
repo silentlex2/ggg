@@ -9,6 +9,25 @@
 ~~参赛材料在 `ggg/参赛方案/`（另一个 git 仓库），这里只放工程工具。~~
 → **已归档**：整个项目现在都在 `ggg/` 一个仓库里，本目录即 `ggg/技术档案/`。
 
+## 🚪 进平台的标准姿势（2026-10-14 记，**别省这一步**）
+
+**不要直接打开 `https://aiagent.cqut.edu.cn:31134/...`。**
+直接开会落到 `/signin` 要账号密码 + 验证码，而且那种标签页里 `localStorage.console_token` 是空的，
+所有平台接口一律返回 `401 {"code":"4000","message":"鉴权异常"}`。
+
+正确路径是**两步**：
+
+1. 打开大赛门户 **`http://aiac.cqut.edu.cn:3090/ai`**（「智小理智能体平台」介绍页）
+2. 点页面上的 **「体验"智小理智能体平台"」** 按钮 →
+   跳 `uis.cqut.edu.cn` 的 CAS 单点登录
+   （`?service=https://aiagent.cqut.edu.cn:31134/cas-proxy/api/casRedirect`）自动回落
+
+走完这两步，那个 `aiagent.cqut.edu.cn:31134` 标签页里的 `localStorage.console_token`（535 字符）才是活的。
+平台接口全部依赖它：`Authorization: Bearer <t>` + `OperToken: <t>`。
+
+> 公开站点 `/chat/<站点码>` 是只读对话地址，**不受此限，可以直接开**。
+> 这条约束只针对**控制台 / 工作流接口**。
+
 所有脚本都通过浏览器标签页里的 `console_token` 调平台接口，不存密码、不落令牌。
 标签页：`owb eval --tab ~~2030596171~~ <现取> --await-promise --expression "..."`（表达式要先 base64 再包一层
 `eval(new TextDecoder('utf-8').decode(Uint8Array.from(atob('...'),c=>c.charCodeAt(0))))`，
@@ -64,3 +83,13 @@
   （这条来回翻了两次，所以关键结论一定要写成"在什么条件下成立"，别只写结论。）
 - 知识库重排（rerank）：4 个检索节点默认全是 `reranking_enable: false`，
   平台其实**提供** `bge-reranker-v2-m3`；开启后「岗位知识库」的召回排序有改善（v4 站点已启用）
+- **线上到底开的哪套检索，可以从回复里反推**（2026-10-14 实测确认）：
+  取数路径必须是 `message_end.data.metadata.retriever_resources`，
+  从 `workflow_finished` 或 `event.data` 取**永远为空**。
+  判定法：`max(score) > 0.75` → reranker 分（不归一化，常见 1.0）；`0.3–0.6` → 加权混合分。
+  实测对照（同一条化工求职提问）：
+  - 正式站 `jb3VQ96s2Vmv5aP4` 岗位匹配 → **8 条**，`1.0 / 0.99 / 0.976 / 0.934 / 0.927 / 0.92 / 0.875 / 0.842`，
+    命中 **KB3-专业行业岗位对照库 + KB4-岗位JD库** ⇒ 走的是 rerank。
+  - 旧站 `3PNowdyi2c13Khnl` 同题 → 5 条、全部 KB4、`0.51 / 0.505 / 0.505 / 0.504 / 0.5` ⇒ 走的是加权。
+  - 两个站的模拟面试（1 条 0.117）、政策咨询（5 条 0.409–0.273）、简历诊断（0 条）完全一致，
+    证明**两站差异确实只落在岗位库**这一个节点上。
