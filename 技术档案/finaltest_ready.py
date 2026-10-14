@@ -3,7 +3,7 @@
 import json, ssl, re, time, urllib.request
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
-SITE = "3PNowdyi2c13Khnl"  # 2026-10-14 v2 版（含实时政策源 HTTP 节点；前序 vBP7v5MWoBA6yCPt 已下线）
+SITE = "jb3VQ96s2Vmv5aP4"  # 2026-10-14 v2 版（含实时政策源 HTTP 节点；前序 vBP7v5MWoBA6yCPt 已下线）
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 
 req = urllib.request.Request(BASE + "/api/passport", headers={"X-App-Code": SITE})
