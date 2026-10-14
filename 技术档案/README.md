@@ -89,12 +89,16 @@
 - 知识库重排（rerank）：4 个检索节点默认全是 `reranking_enable: false`，
   平台其实**提供** `bge-reranker-v2-m3`；开启后「岗位知识库」的召回排序有改善（v4 站点已启用）
 - **线上到底开的哪套检索，可以从回复里反推**（2026-10-14 实测确认）：
-  取数路径必须是 `message_end.data.metadata.retriever_resources`，
-  从 `workflow_finished` 或 `event.data` 取**永远为空**。
+  **取数路径**：`retriever_resources` 在 `message_end` 事件的**顶层** `metadata` 里 ——
+  正确写法 `j["metadata"]["retriever_resources"]`；`message_end` 的 `data` 是**空 dict**
+  （顶层 keys = `conversation_id / created_at / event / files / has_graph_rag / id / message_id / metadata / task_id`），
+  `workflow_finished.data` 里也没有这个字段。写成 `j["data"]["metadata"]` 会永远取到 0 条 ——
+  看起来像「rerank 失效」，其实是取错了地方，别被它骗第二次。
   判定法：`max(score) > 0.75` → reranker 分（不归一化，常见 1.0）；`0.3–0.6` → 加权混合分。
   实测对照（同一条化工求职提问）：
-  - 正式站 `jb3VQ96s2Vmv5aP4` 岗位匹配 → **8 条**，`1.0 / 0.99 / 0.976 / 0.934 / 0.927 / 0.92 / 0.875 / 0.842`，
+  - 正式站 `jb3VQ96s2Vmv5aP4`（v4）与 `j5qWmoi0m0UYWDpj`（v7）岗位匹配 → **8 条**，
+    `1.0 / 0.9903 / 0.9762 / 0.9343 / 0.9266 / 0.92 / 0.8752 / 0.8423`，
     命中 **KB3-专业行业岗位对照库 + KB4-岗位JD库** ⇒ 走的是 rerank。
   - 旧站 `3PNowdyi2c13Khnl` 同题 → 5 条、全部 KB4、`0.51 / 0.505 / 0.505 / 0.504 / 0.5` ⇒ 走的是加权。
-  - 两个站的模拟面试（1 条 0.117）、政策咨询（5 条 0.409–0.273）、简历诊断（0 条）完全一致，
-    证明**两站差异确实只落在岗位库**这一个节点上。
+  - v7 三个分支同时实测：模拟面试 2 条 `0.2525 / 0.1882`（KB2）、政策咨询 5 条 `0.2561–0.1951`（KB5）、
+    岗位匹配 8 条 reranker 分 —— **同一个工作流里两种检索形态并存**，证明 rerank 只作用在岗位库那一个节点上。
