@@ -61,7 +61,7 @@
 | --- | --- |
 | `graph_backup_20261010.json` | 拆死链前的完整图，29 节点。要还原就把里面的 `graph` 存回草稿 |
 | `srcdraft.json` | 某次保存的工作应用草稿全量，用来离线翻结构 |
-| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2/v3，已关站）~~ → ~~`jb3VQ96s2Vmv5aP4`（v4，岗位库 rerank，留作回退）~~ → ~~`3dx3j3cacsfYdLe8`（v5，留作回退）~~ → ~~`g2XDtP2IvbgTKh8k`（v6，评分总分挪到分项之后，留作回退）~~ → ~~`j5qWmoi0m0UYWDpj`（v7，v6b 技能证据纪律 / 时效说明 / 专业兜底 / 来源冲突裁决）~~ → ~~`wcQKFhBvvTDarYlC`（v7d，v7a/b/c 重练分支 + 收尾硬规则 + 政策拒答给路径）~~ → **`bZ98CHD4YaVpajtY`（2026-10-14 v7e：面试进度 max(M+1,C) + 重练只走一轮 + 政策拒答给路径）** |
+| `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2/v3，已关站）~~ → ~~`jb3VQ96s2Vmv5aP4`（v4，岗位库 rerank，留作回退）~~ → ~~`3dx3j3cacsfYdLe8`（v5，留作回退）~~ → ~~`g2XDtP2IvbgTKh8k`（v6，评分总分挪到分项之后，留作回退）~~ → ~~`j5qWmoi0m0UYWDpj`（v7，v6b 技能证据纪律 / 时效说明 / 专业兜底 / 来源冲突裁决）~~ → ~~`wcQKFhBvvTDarYlC`（v7d，v7a/b/c 重练分支 + 收尾硬规则 + 政策拒答给路径）~~ → ~~`bZ98CHD4YaVpajtY`（v7e：面试进度 max(M+1,C) + 重练只走一轮）~~ → ~~`rWxRKhq13wV1PS3X`（v8：要求—证据矩阵 / 隐私遮罩 / 证据四值 / 政策引用溯源）~~ → ~~`Y7oLU89eNCqPvcJV`（v8b：结尾修正 + 评分档位锚点）~~ → ~~`Se6izgWbb0jK9DBZ`（v9：覆盖度统计 + 岗位原文逐字摘录 + 追问预演 + 政策分档）~~ → **`l8HJAJ78lH0XfGzn`（2026-10-15 v10：面试收尾优先级 + 判定只看标记 + 不打发用户 + 硬门槛判据）** |
 
 ## scratch/
 
@@ -102,3 +102,12 @@
   - 旧站 `3PNowdyi2c13Khnl` 同题 → 5 条、全部 KB4、`0.51 / 0.505 / 0.505 / 0.504 / 0.5` ⇒ 走的是加权。
   - v7 三个分支同时实测：模拟面试 2 条 `0.2525 / 0.1882`（KB2）、政策咨询 5 条 `0.2561–0.1951`（KB5）、
     岗位匹配 8 条 reranker 分 —— **同一个工作流里两种检索形态并存**，证明 rerank 只作用在岗位库那一个节点上。
+- **5 题制的固有语义（2026-10-15 实测确认）**：面试进度行「N/5」表示**即将出的题号**，
+  所以答完第 5 题时最后一条消息仍是「第 5 题 / 5/5」，复盘出现在**用户下一条消息之后**。
+  `probe_v7d.py` 最初只发 5 条作答就断言「收尾复盘 FAIL」，属**测试断言错误**，已改成全轮扫描。
+- **v8–v10 的补丁入口**：`技术档案/scratch/patch.py <edits.json> [app_id] [备注]`（pull → needle 必须**恰好命中 1 次** → push → publish）。
+  ⚠️ `技术档案/draft.py push <body.json>` 是**整份覆盖**草稿，会冲掉平台上已有的提示词补丁；
+  结构改动必须放最后一次，顺序是「先 pull → patch.py 打补丁 → 最后才 push 结构」。
+  中文 needle/repl 必须先写成 UTF-8 的 JSON 文件，别在 Python 源码里写中文字面量。
+- 克隆站点模板：`技术档案/clone_v8.py` / `clone_v8b.py` / `clone_v9.py` / `clone_v10.py`
+  （改 SRC/OLD/标记清单 → 复制应用 → 恢复图标 → publish → 旧正式站改名加「（回退 · vN）」）。

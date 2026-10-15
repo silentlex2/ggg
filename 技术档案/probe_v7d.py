@@ -45,20 +45,32 @@ ANSWERS = [
  "为什么选 22 块板：我先用简捷法算了个初值，再用严格法校核，考虑到板效率取 0.7，实际需要的理论板就是这个量级。",
  "有一次团队做化工设计大赛，时间只剩三天，我主动把物料衡算和热量衡算拆出来自己做，最后按时交了作品。",
  "我想先在化工工艺岗位上做三年，把生产现场的工艺问题摸熟，再往工艺设计方向转。",
+ "好的，我明白了，就按你说的这个方向准备。",
+ "嗯，那我回去再补充一下这方面的经历。",
 ]
 
 print("=== D1 面试五题收尾（第 6 轮必须出复盘）===")
-cid = None; last = None
+cid = None; last = None; outs = []
 for i, a in enumerate(ANSWERS):
     t, cid, nodes, wf = ask(a, cid)
     last = t
+    outs.append(t)
     print("  第%d轮 进度=%s 长度=%d" % (i + 1, prog(t), len(t)))
     time.sleep(1)
-has_report = ("四维表现" in last) or ("本次得分" in last) or ("综合算式" in last)
-print("  收尾复盘 =", "OK" if has_report else "FAIL", "| 复盘长度", len(last))
-print("---- 末轮输出 ----")
-print(last[:1600])
-open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch", "_v7d_report.txt"), "w", encoding="utf-8").write(last)
+# 5 题制语义：进度行 N/5 = 即将出的题号，答完第 5 题后模型可能同一条就出复盘，
+# 也可能等用户下一条消息再出，所以判定必须扫全部轮次，不能只看末轮。
+def _is_report(x):
+    return ("四维表现" in x) or ("本次得分" in x) or ("综合算式" in x)
+hit = [i + 1 for i, x in enumerate(outs) if _is_report(x)]
+print("  收尾复盘 =", "OK" if hit else "FAIL", "| 出现在第 %s 轮" % (hit or "无"))
+if hit:
+    rep = outs[hit[0] - 1]
+    print("  复盘长度", len(rep))
+    print("---- 复盘输出 ----")
+    print(rep[:1600])
+    open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "scratch", "_v7d_report.txt"), "w", encoding="utf-8").write(rep)
+print("---- 末轮输出（应为「不再出题」的收尾）----")
+print(last[:900])
 
 print()
 print("=== D2 重练第 3 题（不许打折）===")
