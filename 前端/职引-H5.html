@@ -179,13 +179,15 @@
       <textarea id="input" rows="1" placeholder="说说你的情况，或直接提问…"></textarea>
       <button class="send" id="send" aria-label="发送">↑</button>
     </div>
-    <div class="foot">上下文会随每轮自动带上</div>
+    <div class="foot">上下文会随每轮自动带上 · <a id="plink" href="#" target="_blank" rel="noopener">平台版入口</a></div>
   </div>
 </div>
 <script>
 const API = "https://aiagent.cqut.edu.cn:31134/v1/chat-messages";
 const KEY = "app-8PKbSyrPSFnPGjQ5AQX6u1Zl";   /* 公开静态页专用密钥（应用 v19），可随时在控制台吊销 */
 const STORE = "zhiyin.v1";
+/* 平台版入口：同一个工作流的平台页面地址。换站时只改这一行（站点码真源在 技术档案/readysite.txt） */
+const PLATFORM = "https://aiagent.cqut.edu.cn:31134/chat/YnmaDNCRpd1otyrC";
 const PRESET = ["帮我诊断简历","帮我匹配岗位","来一场模拟面试","三方协议怎么签？",
   "我是化工学院大三，想找重庆的校招岗位","帮我把项目经历改写得更专业",
   "我投了简历没回音，问题可能在哪","档案和报到证有什么区别"];
@@ -564,6 +566,7 @@ $("#newChat").onclick = function(){
 };
 
 renderAttach();
+$("#plink").href = PLATFORM;
 
 if (state.msgs.length){
   $("#home").style.display = "none"; $("#chat").classList.add("on");
