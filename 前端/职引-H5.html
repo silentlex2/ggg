@@ -304,7 +304,7 @@ const CN_NUM = { "一":1, "二":2, "三":3, "四":4, "五":5, "六":6, "七":7, 
    所以这里挡掉倒退；真要重开一轮，由 resetInterview() 显式归零。 */
 function applyProgress(n){
   if (!n){ setProgress(0); return; }
-  if (n < state.progress && state.progress < 5) return;
+  if (n < state.progress) return;   /* 只增不减：真要重开一轮走 resetInterview() */
   setProgress(n);
 }
 function resetInterview(){ setProgress(0); }

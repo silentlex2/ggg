@@ -14,6 +14,8 @@
      ——hidden 属性会被 display 规则盖掉，我们为这个 bug 单独修过一次
   6. 无障碍底线：<html lang>、viewport、button 有文字或 aria-label
   7. 体积预算：超过 60 KB 报 WARN（单文件还能接受，再大就该拆了）
+  8. 纯逻辑单元测试：调 h5_unit.js，验「进度只增不减」与「历史串拼装」。
+     静态检查看不出这两件事，而它们是 v19 唯一自研的部分，改坏了浏览器也不报错。
 
 用法：
     python h5_lint.py            # 体检，退出码 0 = 通过 / 1 = 有 FAIL
@@ -181,6 +183,29 @@ def check_a11y(html):
         ok("按钮都有可读文本或 aria-label")
 
 
+def check_unit():
+    """纯逻辑单元测试：进度单调、历史串拼装（h5_unit.js）。
+
+    静态检查看不出「进度会不会倒退」，而那是 v19 自研部分的命门。
+    """
+    print("\n[8] 纯逻辑单元测试")
+    script = os.path.join(HERE, "h5_unit.js")
+    if not os.path.exists(script):
+        warn("没有 h5_unit.js，跳过单元测试")
+        return
+    node = shutil.which("node")
+    if not node:
+        warn("本机没有 node，跳过单元测试")
+        return
+    p = subprocess.run([node, script, "--quiet"], cwd=HERE, capture_output=True,
+                       text=True, encoding="utf-8", errors="replace")
+    out = (p.stdout or "").strip()
+    if p.returncode == 0:
+        ok(out or "单元测试通过")
+    else:
+        fail("单元测试未通过：%s" % (out or p.stderr).strip()[:400])
+
+
 def main():
     args = sys.argv[1:]
     extract = "--extract" in args
@@ -213,6 +238,8 @@ def main():
         warn("文件 %.1f KB 超过 %.0f KB 预算，考虑拆分" % (len(raw) / 1024.0, SIZE_WARN / 1024.0))
     else:
         ok("文件 %.1f KB，在 %.0f KB 预算内" % (len(raw) / 1024.0, SIZE_WARN / 1024.0))
+
+    check_unit()
 
     print("\n---H5_LINT---")
     print("LINES: %d" % (html.count("\n") + 1))
