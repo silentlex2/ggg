@@ -44,6 +44,24 @@
         color:#334155;cursor:pointer;box-shadow:0 1px 2px rgba(15,23,42,.03)}
   .chip:hover{border-color:#c7d2e3;color:var(--ink)}
   .note{font-size:12px;color:var(--sub);padding:2px 2px 0}
+  .guide{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px;
+         box-shadow:var(--shadow);display:none;flex-direction:column;gap:13px}
+  .guide.on{display:flex}
+  /* 开问诊时把首屏让出来：四张卡片 + 大标题会把三步挤到屏幕外 */
+  #home.guiding .hello,#home.guiding .cards,#home.guiding #chips,#home.guiding .note{display:none}
+  .gstep b{display:block;font-size:13.5px;margin-bottom:7px}
+  .gstep .chips{gap:7px}
+  .chip.on{background:linear-gradient(140deg,var(--teal),var(--brand));color:#fff;border-color:transparent}
+  .gfree{width:100%;margin-top:8px;border:1px solid var(--line);border-radius:10px;padding:8px 10px;
+         font-family:inherit;font-size:14px;outline:0;color:var(--ink)}
+  .gfree:focus{border-color:#bfd0ea}
+  .gfoot{display:flex;gap:9px;justify-content:flex-end;align-items:center}
+  .gfoot .ghost{padding:8px 12px;font-size:13px}
+  .primary{border:0;border-radius:10px;padding:9px 15px;font-size:13.5px;cursor:pointer;
+           background:var(--brand);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+  .primary:disabled{background:#c7d2e3;box-shadow:none;cursor:not-allowed}
+  .gprev{font-size:12.5px;color:var(--sub);line-height:1.6;min-height:18px}
+  .gprev b{color:var(--ink)}
   #chat{display:none;flex-direction:column;gap:12px;padding:16px 14px 8px}
   #chat.on{display:flex}
   .row{display:flex;gap:8px;max-width:100%}
@@ -111,10 +129,31 @@
     </div>
     <div class="cards">
       <button class="card" data-q="帮我看看我的简历有什么问题"><span class="ico">📄</span><b>简历诊断</b><span>按目标岗位逐条改，标出缺口</span></button>
-      <button class="card" data-q="我是化学工程与工艺专业大四，想在重庆找校招岗位"><span class="ico">🔍</span><b>岗位匹配</b><span>从校内岗位库挑对口岗</span></button>
+      <button class="card" data-guide="1"><span class="ico">🔍</span><b>岗位匹配</b><span>三步问诊：专业 · 城市 · 最急的事</span></button>
       <button class="card" data-q="来一场模拟面试，目标岗位是化工工艺工程师"><span class="ico">🎤</span><b>模拟面试</b><span>5 题追问 + 四维复盘</span></button>
       <button class="card" data-q="三方协议怎么签"><span class="ico">📋</span><b>政策咨询</b><span>三方 / 档案 / 补贴 / 劳动</span></button>
     </div>
+    <section class="guide" id="guide">
+      <div class="gstep">
+        <b>① 你的专业</b>
+        <div class="chips" id="gmajor"></div>
+        <input class="gfree" id="gfree" placeholder="没在上面？直接输入专业名，如 应用化学">
+      </div>
+      <div class="gstep">
+        <b>② 想去哪工作</b>
+        <div class="chips" id="gcity"></div>
+      </div>
+      <div class="gstep">
+        <b>③ 现在最急的是</b>
+        <div class="chips" id="gneed"></div>
+      </div>
+      <div class="gprev" id="gprev"></div>
+      <div class="gfoot">
+        <button class="ghost" id="gcancel">取消</button>
+        <button class="ghost" id="gfill" disabled>填到输入框</button>
+        <button class="primary" id="gmake" disabled>直接问</button>
+      </div>
+    </section>
     <div class="chips" id="chips"></div>
     <div class="note">回答由大模型生成，政策口径仅供参考；关键决定前请以官方文件与学校就业指导中心为准。</div>
   </main>
@@ -144,8 +183,9 @@ function load(){
   try{
     const s = JSON.parse(localStorage.getItem(STORE) || "{}");
     return { cid: s.cid || "", uid: s.uid || ("u" + Math.random().toString(36).slice(2,10)),
-             msgs: Array.isArray(s.msgs) ? s.msgs : [], progress: s.progress || 0 };
-  }catch(e){ return { cid:"", uid:"u"+Math.random().toString(36).slice(2,10), msgs:[], progress:0 }; }
+             msgs: Array.isArray(s.msgs) ? s.msgs : [], progress: s.progress || 0,
+             g: s.g || {} };
+  }catch(e){ return { cid:"", uid:"u"+Math.random().toString(36).slice(2,10), msgs:[], progress:0, g:{} }; }
 }
 function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
 
@@ -322,6 +362,88 @@ async function send(text){
   }
 }
 
+/* ── 三步问诊：把「专业 / 城市 / 最急的事」先收齐再拼成一句问话 ──
+   学生自己一句话描述常常漏掉专业或城市，岗位库召回就跟着差；这里把三个槽位固定下来，
+   顺带让「简历没回音」这类诉求落到对的分支，而不是被当成长篇闲聊。 */
+const MAJORS = ["化学工程与工艺","材料科学与工程","机械设计制造及其自动化","车辆工程",
+                "电气工程及其自动化","计算机科学与技术","人工智能","会计学"];
+const CITIES = ["重庆主城","重庆渝北","重庆两江新区","重庆长寿","重庆涪陵","成都","不限"];
+const NEEDS  = ["找对口岗位","看薪资水平","简历没回音","想找实习","想换个方向"];
+const ASK = {
+  "找对口岗位": "请按校内岗位库给我 4 个对口岗位，说明匹配理由、我的差距，以及下一步怎么补。",
+  "看薪资水平": "请给我对口岗位和它们的薪资区间，并说明以我现在的条件大概能落在哪一档。",
+  "简历没回音": "我投了简历没回音，请帮我诊断简历，并对照这些岗位的要求指出最可能被筛掉的点。",
+  "想找实习": "请给我对口的实习岗位，说明岗位要求、我现在缺什么、怎么在毕业前补上。",
+  "想换个方向": "我考虑换个方向，请给我几个可迁移的对口岗位，说明需要补的技能和大概要多久。"
+};
+const G = { major: "", city: "", need: "" };
+Object.assign(G, state.g || {});
+
+function askText(){
+  const major = G.major || "（专业）";
+  const where = !G.city || G.city === "不限" ? "重庆或成都" : G.city;
+  const kind = G.need === "想找实习" ? "实习" : "校招";
+  return "我是" + major + "专业，想在" + where + "找" + kind + "岗位。"
+    + (ASK[G.need] || "请按校内岗位库给我对口岗位并说明差距。");
+}
+function gChip(label, on, act){
+  return '<button class="chip' + (on ? " on" : "") + '" data-g="' + esc(act) + '">' + esc(label) + "</button>";
+}
+function paintGuide(){
+  $("#gmajor").innerHTML = MAJORS.map(function(m){ return gChip(m, G.major === m, "major|" + m); }).join("");
+  $("#gcity").innerHTML = CITIES.map(function(c){ return gChip(c, G.city === c, "city|" + c); }).join("");
+  $("#gneed").innerHTML = NEEDS.map(function(n){ return gChip(n, G.need === n, "need|" + n); }).join("");
+  Array.prototype.forEach.call(document.querySelectorAll(".guide .chip"), function(b){
+    b.onclick = function(){
+      const parts = b.dataset.g.split("|");
+      G[parts[0]] = parts[1];
+      if (parts[0] === "major") $("#gfree").value = "";
+      state.g = G; save();
+      paintGuide();
+    };
+  });
+  if (G.major && MAJORS.indexOf(G.major) < 0) $("#gfree").value = G.major;
+  const ready = !!(G.major && G.need);
+  $("#gmake").disabled = !ready;
+  $("#gfill").disabled = !ready;
+  $("#gprev").innerHTML = ready
+    ? "将发送：<b>" + esc(askText()) + "</b>"
+    : "选好专业和「最急的事」就能生成；城市可以不选，默认重庆或成都。";
+}
+function openGuide(){
+  $("#home").classList.add("guiding");
+  $("#guide").classList.add("on");
+  paintGuide();
+  $("#guide").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function closeGuide(){
+  $("#home").classList.remove("guiding");
+  $("#guide").classList.remove("on");
+}
+$("#gfree").addEventListener("input", function(e){
+  const v = e.target.value.trim();
+  if (v){ G.major = v; state.g = G; save(); }
+  else if (MAJORS.indexOf(G.major) < 0){ G.major = ""; }
+  const ready = !!(G.major && G.need);
+  $("#gmake").disabled = !ready; $("#gfill").disabled = !ready;
+  $("#gprev").innerHTML = ready
+    ? "将发送：<b>" + esc(askText()) + "</b>"
+    : "选好专业和「最急的事」就能生成；城市可以不选，默认重庆或成都。";
+});
+$("#gcancel").onclick = function(){ closeGuide(); };
+$("#gfill").onclick = function(){
+  $("#input").value = askText();
+  $("#input").dispatchEvent(new Event("input"));
+  closeGuide();
+  $("#input").focus();
+};
+$("#gmake").onclick = function(){
+  const q = askText();
+  closeGuide();
+  $("#input").value = "";
+  send(q);
+};
+
 $("#send").onclick = function(){ const t = $("#input").value; $("#input").value = ""; $("#input").style.height="auto"; send(t); };
 $("#input").addEventListener("keydown", function(e){
   if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); $("#send").click(); }
@@ -329,7 +451,9 @@ $("#input").addEventListener("keydown", function(e){
 $("#input").addEventListener("input", function(e){
   e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px";
 });
-Array.prototype.forEach.call(document.querySelectorAll(".card"), function(c){ c.onclick = function(){ send(c.dataset.q); }; });
+Array.prototype.forEach.call(document.querySelectorAll(".card"), function(c){
+  c.onclick = function(){ if (c.dataset.guide) return openGuide(); send(c.dataset.q); };
+});
 $("#chips").innerHTML = PRESET.map(function(q){ return '<button class="chip">' + esc(q) + '</button>'; }).join("");
 Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(c){ c.onclick = function(){ send(c.textContent); }; });
 /* 导出成 Markdown：学生可以把诊断结果直接给老师看，也方便留档 */
