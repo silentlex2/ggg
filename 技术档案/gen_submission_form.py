@@ -143,6 +143,16 @@ print("URL_IN_DOC: %s" % ("yes" if url_ok else "no"))
 print("PLACEHOLDER_LEFT: %d" % left)
 print("FILLED: %d/3 （队长姓名/学号/手机号）" % FILLED)
 print("IMAGES: %d" % len(check.inline_shapes))
+# 三段正文的字数上限来自官方模板：简介 200 / 设计思路 1000 / 使用说明 300
+LEN_A, LEN_B, LEN_C = len(A), sum(len(x) for x in B), sum(len(x) for x in C)
+print("BODY_A_CHARS: %d / 200" % LEN_A)
+print("BODY_B_CHARS: %d / 1000" % LEN_B)
+print("BODY_C_CHARS: %d / 300" % LEN_C)
 print("---END---")
 if not url_ok:
     sys.exit("提交表里的作品地址与 readysite.txt 不一致，停止")
+# 官方模板给了三段字数上限，超了会被形式审查挑出来，所以在这里硬拦
+oversize = [n for n, v, cap in (("简介", LEN_A, 200), ("设计思路", LEN_B, 1000), ("使用说明", LEN_C, 300))
+            if v > cap]
+if oversize:
+    sys.exit("正文超字数：%s —— 改 参赛方案/02-提交材料清单.md 的草稿后重跑" % "、".join(oversize))
