@@ -21,13 +21,15 @@
     PRIVACY: ok
     CONSISTENCY: ok
     H5: ok
+    KB: 5/1.0000
     SUBMISSION: missing(2)
     DRAFT: same
     GOLDEN_EXIT: 0
     SCORE: 1.000
     ---END---
 
-CONSISTENCY / H5 参与门禁（口径漂移、页面指向错站必须挡住）；SUBMISSION 只报不拦——三样材料里
+CONSISTENCY / H5 / KB 参与门禁（口径漂移、页面指向错站、知识库检索不到都必须挡住）；
+SUBMISSION 只报不拦——三样材料里
 有视频和照片只能人来录，缺项是常态，不该把整道门打成红。
 DRAFT 也不拦：它需要控制台 token（会过期），过期时只能 skipped；但一旦报
 drift，说明有人在控制台手改了线上草稿而仓库没跟上，值得立刻看一眼。
@@ -58,6 +60,8 @@ NO_GOLDEN = "--no-golden" in ARGS
 FULL = "--full" in ARGS
 # 材料侧两道离线检查：死链、隐私口径。都不碰站点，放进这道门最划算——改完文档随手就跑到了
 NO_OFFLINE = ("--no-offline" in ARGS) or ("--no-links" in ARGS)
+# 知识库实检是一次真实提问（约 13s），要连站点；--no-kb 可跳过
+NO_KB = "--no-kb" in ARGS
 TOOLS_DIR = os.path.join(os.path.dirname(HERE), "参赛方案", "tools")
 LINKS_SCRIPT = os.path.join(TOOLS_DIR, "check-links.py")
 PRIVACY_SCRIPT = os.path.join(TOOLS_DIR, "check-privacy-claims.py")
@@ -65,6 +69,7 @@ CONSISTENCY_SCRIPT = os.path.join(TOOLS_DIR, "check-consistency.py")
 SUBMISSION_SCRIPT = os.path.join(TOOLS_DIR, "check-submission.py")
 DRAFT_SCRIPT = os.path.join(HERE, "workflow_diff.py")
 H5_SCRIPT = os.path.join(HERE, "h5_lint.py")
+KB_SCRIPT = os.path.join(HERE, "kb_live_check.py")
 
 
 def site_code():
@@ -259,6 +264,8 @@ def main():
     submission_missing = None
     draft_tag = None
     h5_rc = None
+    kb_rc = None
+    kb_desc = "skipped"
     if not NO_OFFLINE:
         if os.path.exists(LINKS_SCRIPT):
             links_rc = run_script(LINKS_SCRIPT)
@@ -279,6 +286,17 @@ def main():
             m = re.search(r"DRIFT:\s*(yes|no)", draft_out)
             draft_tag = ("drift" if m.group(1) == "yes" else "same") if m else "skipped"
 
+    # 知识库实检：巡检只看答案对不对，看不出检索有没有真命中
+    if not NO_KB and os.path.exists(KB_SCRIPT):
+        kb_rc, kb_out = run_script_capture(KB_SCRIPT, ["--quiet"])
+        m = re.search(r"KB_HITS:\s*(\d+)", kb_out or "")
+        s = re.search(r"KB_TOP_SCORE:\s*([\d.]+)", kb_out or "")
+        ok_flag = re.search(r"KB_OK:\s*(yes|no)", kb_out or "")
+        if m and s:
+            kb_desc = "%s/%s" % (m.group(1), s.group(1))
+        if ok_flag and ok_flag.group(1) == "no":
+            kb_rc = kb_rc or 1
+
     if not NO_GOLDEN:
         extra = ["--json", REPORT]
         if ONLY:
@@ -290,7 +308,8 @@ def main():
 
     ok = ((npass == ntotal and ntotal > 0) and (golden_rc in (None, 0))
           and (links_rc in (None, 0)) and (privacy_rc in (None, 0))
-          and (consistency_rc in (None, 0)) and (h5_rc in (None, 0)))
+          and (consistency_rc in (None, 0)) and (h5_rc in (None, 0))
+          and (kb_rc in (None, 0)))
     print("\n" + "=" * 78)
     print("总耗时 %.1fs   站点 %s" % (time.time() - t0, SITE))
     if full_rc is not None:
@@ -301,6 +320,7 @@ def main():
     print("PRIVACY: %s" % ("skipped" if privacy_rc is None else ("ok" if privacy_rc == 0 else "fail(%d)" % privacy_rc)))
     print("CONSISTENCY: %s" % ("skipped" if consistency_rc is None else ("ok" if consistency_rc == 0 else "fail(%d)" % consistency_rc)))
     print("H5: %s" % ("skipped" if h5_rc is None else ("ok" if h5_rc == 0 else "fail(%d)" % h5_rc)))
+    print("KB: %s%s" % (kb_desc, "" if kb_rc in (None, 0) else "  ← 实检不通过"))
     print("DRAFT: %s" % (draft_tag or "skipped"))
     if submission_rc is None:
         print("SUBMISSION: skipped")

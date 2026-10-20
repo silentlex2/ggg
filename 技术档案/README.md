@@ -72,6 +72,7 @@
 | `run_all.py` | 一键门禁：五分支巡检 + 黄金集 + 死链 / 隐私 / 一致性 / H5 四道离线检查 + 草稿漂移，输出 `---SCORE_SUMMARY---` 契约 |
 | `h5_lint.py` | 自建前端静态体检：`node --check` 语法、页面里的站点码是否等于 readysite.txt、有无 CDN 外链、`.attach[hidden]` 那条已知回归、无障碍底线、体积预算。`--file` 可查任意副本 |
 | `workflow_diff.py` | 线上草稿 vs 仓库快照逐节点比哈希；`--dump-only` 建档、`--restore --yes` 写回 |
+| `kb_live_check.py` | 知识库线上实检：真发一次岗位提问，读 `message_end` 顶层 `metadata.retriever_resources`，判命中条数 / 最高分 / 命中文档，输出 `---KB---` 契约。已进 `run_all.py`（`KB: 5/1.0000`） |
 | `h5_unit.js` | 自建前端纯逻辑单元测试（node，无需浏览器）：进度只增不减、中文数字解析、历史串拼装与截断。已并入 `h5_lint.py` 第 8 项 |
 | `eval_flake.py` | 黄金集稳定性统计：同一配置跑 N 轮，逐条给通过率，分开「恒定红」与「偶发红」——评委面前翻车的永远是偶发那几条 |
 | `gen_submission_form.py` / `make_form_pdf.py` | 生成提交表 docx 与 PDF，正文三段字数超限直接非零退出 |
