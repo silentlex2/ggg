@@ -39,7 +39,9 @@
     打字机效果在前端本地做
   - `inputs: { user_input, ctx }`，`ctx` 对应工作流 start 节点的可选变量
 - 会话状态（`conversation_id`、消息、面试进度）存在 `localStorage`，键名 `zhiyin.v1`
-- 面试进度条从答案里正则抓 `面试进度：N/5`
+- 面试进度条：优先抓 `面试进度：N/5`；抓不到时从「第 N 题」反推（含中文数字），
+  且只在**比当前进度大**时才更新（防倒退），复盘文本里的「第 N 题」会被排除，不误判。
+  这层兜底是因为面试官约十分之一的次数只给题号不给进度行
 - **溯源标签**：blocking 响应的 `metadata.retriever_resources` 带 `dataset_name` 与 `score`，
   前端按数据集聚合、取最高分，渲染成 `📚 岗位库 ×5`（悬停看命中段数与最高匹配分）。
   标签随消息一起存进 `localStorage`，刷新后照样显示；导出 Markdown 时写成 `> 参考：岗位库 ×5`。
@@ -85,6 +87,15 @@
 
 > 2026-10-20 在 H5 里完整走了一场：进度 **1→2→3→4→5** 顺畅推进，第 5 题后回一句「看复盘报告」
 > 出完整复盘（四维分 + 逐条引用原话 + 最需要加强的一题）。这是自建前端里第一次端到端验证面试闭环。
+
+**布局回归**（五档视口，只测量不发请求，随时可跑）：
+
+```bash
+node 技术档案/h5_responsive.js --out 过程截图\h5-responsive
+```
+
+测 320 / 390 / 768 / 1024 / 1440 五档：横向溢出像素、输入框是否在视口内、头部是否折行，
+越界元素会点名。2026-10-20 实测 **5/5 通过，溢出 0px**。截图留在 `过程截图/h5-responsive/`。
 
 出图方式：`owb open "file:///<路径>/职引-H5.html"` → `owb eval "send('…')"` 真跑一轮 →
 `owb cdp --args '{"method":"Emulation.setDeviceMetricsOverride","params":{"width":390,"height":844,"deviceScaleFactor":2,"mobile":true}}'` → `owb shot --out <路径>`。

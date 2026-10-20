@@ -256,7 +256,8 @@ def main():
 
     print()
     print("按组：")
-    for cat in ["意图", "边界", "拒答", "异常", "多轮"]:
+    for cat in sorted({r["cat"] for r in rows}, key=lambda c: ["意图", "边界", "拒答", "异常", "多轮", "专业"].index(c)
+                   if c in ["意图", "边界", "拒答", "异常", "多轮", "专业"] else 99):
         grp = [r for r in rows if r["cat"] == cat]
         if grp:
             print("  %-4s %d/%d" % (cat, sum(1 for r in grp if r["ok"]), len(grp)))

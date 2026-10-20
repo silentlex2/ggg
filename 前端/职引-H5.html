@@ -298,9 +298,18 @@ function setProgress(n){
     + '<span>模拟面试进度</span><b>' + n + ' / 5</b></div><div class="bar"><i style="width:'
     + Math.min(100, n / 5 * 100) + '%"></i></div>';
 }
+const CN_NUM = { "一":1, "二":2, "三":3, "四":4, "五":5, "六":6, "七":7, "八":8, "九":9, "十":10 };
 function scanProgress(t){
   const m = t.match(/面试进度[：:]\s*(\d)\s*\/\s*5/);
-  if (m) setProgress(parseInt(m[1], 10));
+  if (m){ setProgress(parseInt(m[1], 10)); return; }
+  /* 兜底：面试官约十分之一的次数只给「第 N 题」不给「面试进度」行（黄金集 A3 抓到的），
+     没有这层兜底，进度条和快捷按钮都会消失。复盘文本里也会出现「第 3 题」，必须先排除。 */
+  if (/模拟面试复盘|面试复盘/.test(t)) return;
+  const q = t.match(/第\s*([一二三四五六七八九十\d]+)\s*题/);
+  if (!q) return;
+  const raw = q[1];
+  const n = /^\d+$/.test(raw) ? parseInt(raw, 10) : CN_NUM[raw];
+  if (n && n > state.progress) setProgress(n);
 }
 
 function typeOut(el, text){
