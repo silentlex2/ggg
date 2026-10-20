@@ -18,6 +18,7 @@ sys.stdout.reconfigure(encoding="utf-8")
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
 LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
+INLINE_CODE = re.compile(r"`[^`]*`")   # 反引号里的是示例/路径片段，不是真链接
 SKIP_PREFIX = ("http://", "https://", "mailto:", "#", "tel:")
 
 
@@ -45,8 +46,14 @@ def main():
             text = io.open(path, encoding="utf-8").read()
         except Exception:  # noqa: BLE001
             continue
+        in_fence = False
         for line_no, line in enumerate(text.splitlines(), 1):
-            for raw in LINK.findall(line):
+            if line.strip().startswith("```"):
+                in_fence = not in_fence
+                continue
+            if in_fence:
+                continue
+            for raw in LINK.findall(INLINE_CODE.sub("", line)):
                 target = raw.split("#")[0].strip()
                 if not target or target.lower().startswith(SKIP_PREFIX):
                     continue
