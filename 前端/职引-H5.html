@@ -88,6 +88,14 @@
   .progress .bar{height:6px;background:#eef2f8;border-radius:99px;overflow:hidden;margin-top:6px}
   .progress .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--brand));
                    width:0;transition:width .4s ease}
+  .attach{display:flex;align-items:center;gap:8px;margin:0 2px 8px;padding:7px 10px;background:#eef4ff;
+          border:1px solid #cfe0fb;border-radius:12px;font-size:12.5px;color:#1e40af}
+  .attach .ft{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .attach button{border:0;background:transparent;color:#1e40af;cursor:pointer;font-size:12.5px;
+                 text-decoration:underline;flex:0 0 auto}
+  .clip{flex:0 0 auto;width:32px;height:32px;border:0;background:transparent;font-size:17px;
+        cursor:pointer;border-radius:9px;color:#64748b;line-height:1}
+  .clip:hover{background:#f1f5f9;color:var(--ink)}
   .composer{position:sticky;bottom:0;background:linear-gradient(180deg,rgba(246,248,251,0),var(--bg) 30%);
             padding:10px 14px calc(12px + env(safe-area-inset-bottom))}
   .box{display:flex;align-items:flex-end;gap:8px;background:#fff;border:1px solid var(--line);
@@ -125,10 +133,10 @@
   <main id="home">
     <div class="hello">
       <h1>先把事儿说清楚，<br>再给你能照做的答案。</h1>
-      <p>重庆理工大学 · 面向重庆高校应届生。你的简历只用于本次分析，不落库、不留存。</p>
+      <p>重庆理工大学 · 面向重庆高校应届生。简历只用于本次诊断，不写入长期记忆与埋点；对话记录可点「新对话」随时清空。</p>
     </div>
     <div class="cards">
-      <button class="card" data-q="帮我看看我的简历有什么问题"><span class="ico">📄</span><b>简历诊断</b><span>按目标岗位逐条改，标出缺口</span></button>
+      <button class="card" data-q="帮我看看我的简历有什么问题，我想投重庆的岗位" data-needfile="1"><span class="ico">📄</span><b>简历诊断</b><span>传 PDF / Word，按目标岗位逐条改</span></button>
       <button class="card" data-guide="1"><span class="ico">🔍</span><b>岗位匹配</b><span>三步问诊：专业 · 城市 · 最急的事</span></button>
       <button class="card" data-q="来一场模拟面试，目标岗位是化工工艺工程师"><span class="ico">🎤</span><b>模拟面试</b><span>5 题追问 + 四维复盘</span></button>
       <button class="card" data-q="三方协议怎么签"><span class="ico">📋</span><b>政策咨询</b><span>三方 / 档案 / 补贴 / 劳动</span></button>
@@ -161,7 +169,13 @@
   <section id="chat"></section>
 
   <div class="composer">
+    <div class="attach" id="attach" hidden>
+      <span class="ft" id="filetag"></span>
+      <button id="unfile">移除</button>
+    </div>
     <div class="box">
+      <button class="clip" id="clip" aria-label="上传简历">📎</button>
+      <input type="file" id="file" accept=".pdf,.doc,.docx,.txt,.md" hidden>
       <textarea id="input" rows="1" placeholder="说说你的情况，或直接提问…"></textarea>
       <button class="send" id="send" aria-label="发送">↑</button>
     </div>
@@ -184,8 +198,8 @@ function load(){
     const s = JSON.parse(localStorage.getItem(STORE) || "{}");
     return { cid: s.cid || "", uid: s.uid || ("u" + Math.random().toString(36).slice(2,10)),
              msgs: Array.isArray(s.msgs) ? s.msgs : [], progress: s.progress || 0,
-             g: s.g || {} };
-  }catch(e){ return { cid:"", uid:"u"+Math.random().toString(36).slice(2,10), msgs:[], progress:0, g:{} }; }
+             g: s.g || {}, file: null };   /* 上传件不跨会话留存：file id 可能失效，重进页面重新传 */
+  }catch(e){ return { cid:"", uid:"u"+Math.random().toString(36).slice(2,10), msgs:[], progress:0, g:{}, file:null }; }
 }
 function save(){ localStorage.setItem(STORE, JSON.stringify(state)); }
 
@@ -305,6 +319,60 @@ function typeOut(el, text){
   });
 }
 
+/* ── 简历文件：/v1/files/upload 拿到 upload_file_id，再以 inputs.user_file 传给工作流 ──
+   注意：files[] 那个参数只填 sys.files，start 的 user_file 变量仍为空，文档提取拿不到东西；
+   实测只有 inputs.user_file 才会进简历分支（同样问句：传对是 2302 字诊断报告，传错是 96 字「把简历发我」）。 */
+const UPLOAD = "https://aiagent.cqut.edu.cn:31134/v1/files/upload";
+let pendingAfterUpload = null;
+
+function renderAttach(){
+  const box = $("#attach");
+  if (!state.file){ box.hidden = true; return; }
+  box.hidden = false;
+  const kb = Math.max(1, Math.round((state.file.size || 0) / 1024));
+  $("#filetag").textContent = "📄 " + state.file.name + "（" + kb + " KB）";
+}
+async function uploadFile(f){
+  if (f.size > 10 * 1024 * 1024){ alert("文件超过 10 MB，请换一份小一点的简历"); return false; }
+  $("#attach").hidden = false;
+  $("#filetag").textContent = "⏳ 上传中：" + f.name;
+  try{
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("user", state.uid);
+    const res = await fetch(UPLOAD, { method: "POST",
+      headers: { "Authorization": "Bearer " + KEY }, body: fd });
+    if (!res.ok) throw new Error("HTTP " + res.status + " " + (await res.text()).slice(0, 80));
+    const j = await res.json();
+    state.file = { id: j.id, name: j.name || f.name, size: j.size || f.size };
+    renderAttach();
+    return true;
+  }catch(e){
+    state.file = null;
+    $("#attach").hidden = true;
+    alert("上传失败：" + String((e && e.message) || e));
+    return false;
+  }
+}
+$("#clip").onclick = function(){ $("#file").click(); };
+$("#file").onchange = async function(e){
+  const f = e.target.files && e.target.files[0];
+  e.target.value = "";
+  if (!f) return;
+  const ok = await uploadFile(f);
+  if (ok && pendingAfterUpload){
+    const q = pendingAfterUpload;
+    pendingAfterUpload = null;
+    send(q);
+  } else if (!ok){
+    pendingAfterUpload = null;
+  }
+};
+$("#unfile").onclick = function(){
+  state.file = null;
+  renderAttach();
+};
+
 let busy = false;
 async function send(text){
   text = (text || "").trim();
@@ -321,7 +389,12 @@ async function send(text){
 
   /* 本 fork 的 /v1 在 streaming 模式下只回一个事件，blocking 才拿得到完整答案；
      打字机效果改在本地做，体验不变。 */
-  const body = { inputs: { user_input: text, ctx: ctx }, query: text,
+  const inputs = { user_input: text, ctx: ctx };
+  if (state.file && state.file.id){
+    inputs.user_file = { type: "document", transfer_method: "local_file",
+                         upload_file_id: state.file.id };
+  }
+  const body = { inputs: inputs, query: text,
                  response_mode: "blocking", conversation_id: state.cid || "", user: state.uid };
   const t0 = Date.now();
   const tick = setInterval(function(){
@@ -452,7 +525,16 @@ $("#input").addEventListener("input", function(e){
   e.target.style.height = "auto"; e.target.style.height = Math.min(120, e.target.scrollHeight) + "px";
 });
 Array.prototype.forEach.call(document.querySelectorAll(".card"), function(c){
-  c.onclick = function(){ if (c.dataset.guide) return openGuide(); send(c.dataset.q); };
+  c.onclick = function(){
+    if (c.dataset.guide) return openGuide();
+    /* 简历诊断没传文件就问不出东西，先把文件选择器弹出来，传完自动发 */
+    if (c.dataset.needfile && !(state.file && state.file.id)){
+      pendingAfterUpload = c.dataset.q;
+      $("#file").click();
+      return;
+    }
+    send(c.dataset.q);
+  };
 });
 $("#chips").innerHTML = PRESET.map(function(q){ return '<button class="chip">' + esc(q) + '</button>'; }).join("");
 Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(c){ c.onclick = function(){ send(c.textContent); }; });
@@ -480,6 +562,8 @@ $("#newChat").onclick = function(){
   if (state.msgs.length && !confirm("清空当前对话？")) return;
   localStorage.removeItem(STORE); location.reload();
 };
+
+renderAttach();
 
 if (state.msgs.length){
   $("#home").style.display = "none"; $("#chat").classList.add("on");
