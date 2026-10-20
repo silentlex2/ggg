@@ -21,12 +21,15 @@
     PRIVACY: ok
     CONSISTENCY: ok
     SUBMISSION: missing(2)
+    DRAFT: same
     GOLDEN_EXIT: 0
     SCORE: 1.000
     ---END---
 
 CONSISTENCY 参与门禁（口径漂移必须挡住）；SUBMISSION 只报不拦——三样材料里
 有视频和照片只能人来录，缺项是常态，不该把整道门打成红。
+DRAFT 也不拦：它需要控制台 token（会过期），过期时只能 skipped；但一旦报
+drift，说明有人在控制台手改了线上草稿而仓库没跟上，值得立刻看一眼。
 
 退出码：0 = 全绿；1 = 有分支未按预期路由 / 答案过短 / 黄金集低于 0.80；2 = 站点不可达。
 """
@@ -59,6 +62,7 @@ LINKS_SCRIPT = os.path.join(TOOLS_DIR, "check-links.py")
 PRIVACY_SCRIPT = os.path.join(TOOLS_DIR, "check-privacy-claims.py")
 CONSISTENCY_SCRIPT = os.path.join(TOOLS_DIR, "check-consistency.py")
 SUBMISSION_SCRIPT = os.path.join(TOOLS_DIR, "check-submission.py")
+DRAFT_SCRIPT = os.path.join(HERE, "workflow_diff.py")
 
 
 def site_code():
@@ -251,6 +255,7 @@ def main():
     consistency_rc = None
     submission_rc = None
     submission_missing = None
+    draft_tag = None
     if not NO_OFFLINE:
         if os.path.exists(LINKS_SCRIPT):
             links_rc = run_script(LINKS_SCRIPT)
@@ -263,6 +268,11 @@ def main():
             submission_rc, submission_out = run_script_capture(SUBMISSION_SCRIPT)
             m = re.search(r"MISSING:\s*(\d+)", submission_out)
             submission_missing = int(m.group(1)) if m else None
+        if os.path.exists(DRAFT_SCRIPT):
+            # 线上草稿 vs 仓库基准：只报不拦，token 过期就 skipped
+            _, draft_out = run_script_capture(DRAFT_SCRIPT)
+            m = re.search(r"DRIFT:\s*(yes|no)", draft_out)
+            draft_tag = ("drift" if m.group(1) == "yes" else "same") if m else "skipped"
 
     if not NO_GOLDEN:
         extra = ["--json", REPORT]
@@ -285,6 +295,7 @@ def main():
     print("LINKS: %s" % ("skipped" if links_rc is None else ("ok" if links_rc == 0 else "fail(%d)" % links_rc)))
     print("PRIVACY: %s" % ("skipped" if privacy_rc is None else ("ok" if privacy_rc == 0 else "fail(%d)" % privacy_rc)))
     print("CONSISTENCY: %s" % ("skipped" if consistency_rc is None else ("ok" if consistency_rc == 0 else "fail(%d)" % consistency_rc)))
+    print("DRAFT: %s" % (draft_tag or "skipped"))
     if submission_rc is None:
         print("SUBMISSION: skipped")
     elif submission_rc == 0:
