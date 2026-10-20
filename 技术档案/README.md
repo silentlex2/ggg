@@ -73,6 +73,7 @@
 | `h5_lint.py` | 自建前端静态体检：`node --check` 语法、页面里的站点码是否等于 readysite.txt、有无 CDN 外链、`.attach[hidden]` 那条已知回归、无障碍底线、体积预算。`--file` 可查任意副本 |
 | `workflow_diff.py` | 线上草稿 vs 仓库快照逐节点比哈希；`--dump-only` 建档、`--restore --yes` 写回 |
 | `gen_submission_form.py` / `make_form_pdf.py` | 生成提交表 docx 与 PDF，正文三段字数超限直接非零退出 |
+| `make_materials.py` | 提交材料一键再生：docx → PDF → 二维码 → 终检，四步串起来并当场交叉核对（PDF 里的地址必须等于 readysite.txt、二维码解出来必须含当前站点码）。`--pack 姓名 联系方式` 直接打出官网上传要的 zip，材料缺项默认拒绝打包 |
 
 ## scratch/
 
