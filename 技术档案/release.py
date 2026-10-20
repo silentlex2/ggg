@@ -385,7 +385,7 @@ def dangling_refs(draft, removed_ids):
 
 # ---------------------------------------------------------------- 各步骤
 def step_copy(tok, src, name, icon, ctx):
-    head(2, "复制源应用 -> 新应用")
+    head(4, "复制源应用 -> 新应用（站点绑复制瞬间的草稿快照）")
     # 在任何写操作之前先记下旧站此刻在跑的 workflow_id：这是「新站是否真的切过去」的基准。
     ctx["old_live"] = live_workflow(ctx.get("old_site", ""))
     print("  旧站 live workflow_id = %s（切换基准）" % (ctx["old_live"] or "（取不到，改用「非空」判据）"))
@@ -409,7 +409,13 @@ def step_copy(tok, src, name, icon, ctx):
 
 
 def step_draft(tok, src, new_id, patch, ctx):
-    head(3, "取草稿 -> 应用补丁 -> 保存草稿")
+    """注意：new_id 参数保留兼容，实际**改的是源应用草稿**。
+
+    2026-10-20 实测修正：站点绑定的是「复制瞬间的草稿快照」。
+    copy -> 改新应用草稿 -> publish 这条路线上，站点永远跑 copy 那一刻的图（改了个寂寞）。
+    正确顺序是：先改源草稿 -> 发布源 -> 再 copy 一次，新应用的站点才绑到改后的图。
+    """
+    head(2, "取源草稿 -> 应用补丁 -> 保存源草稿")
     status, src_draft = api("/console/api/apps/%s/workflows/draft" % src, "GET", None, tok)
     if status == 200 and isinstance(src_draft, dict):
         print("  源草稿：%d 节点 / %d 边"
@@ -418,7 +424,7 @@ def step_draft(tok, src, new_id, patch, ctx):
     else:
         print("  源草稿读取失败（HTTP %s），不影响后续（补丁打在新草稿上）" % status)
 
-    status, draft = api("/console/api/apps/%s/workflows/draft" % new_id, "GET", None, tok)
+    status, draft = api("/console/api/apps/%s/workflows/draft" % src, "GET", None, tok)
     if status != 200 or not isinstance(draft, dict) or "graph" not in draft:
         abort(3, "取新草稿失败（HTTP %s）" % status, ctx)
         return False
@@ -452,7 +458,7 @@ def step_draft(tok, src, new_id, patch, ctx):
             "environment_variables": draft.get("environment_variables") or {},
             "conversation_variables": draft.get("conversation_variables") or [],
             "hash": draft.get("hash")}
-    status, obj = api("/console/api/apps/%s/workflows/draft" % new_id, "POST", body, tok, timeout=240)
+    status, obj = api("/console/api/apps/%s/workflows/draft" % src, "POST", body, tok, timeout=240)
     print("  POST draft -> HTTP %s  %s" % (status, brief(obj)))
     if status != 200:
         abort(3, "保存草稿失败（HTTP %s）" % status, ctx)
@@ -463,7 +469,7 @@ def step_draft(tok, src, new_id, patch, ctx):
 
 
 def step_publish(tok, new_id, comment, ctx):
-    head(4, "发布工作流")
+    head(3, "发布工作流（源应用）")
     status, obj = api("/console/api/apps/%s/workflows/publish" % new_id, "POST",
                       {"marked_name": "", "marked_comment": comment}, tok, timeout=240)
     print("  POST publish -> HTTP %s  %s" % (status, brief(obj)))
@@ -747,8 +753,8 @@ def plan(args, patch):
     print()
     print("计划（真实模式按此顺序执行，任一步失败即停）：")
     print("  [1/9] 取 token          from tok import token（CONSOLE_TOKEN → 技术档案/.token）")
-    print("  [2/9] POST /console/api/apps/<src>/copy        → 新 app_id，随后 PUT 改名/描述/图标")
-    print("  [3/9] GET 源草稿 → GET 新草稿 → 应用补丁 → POST 新草稿")
+    print("  [2/9] GET 源草稿 → 应用补丁 → POST 源草稿（改的是源应用，不是新应用）")
+    print("  [3/9] POST /console/api/apps/<src>/workflows/publish（先发布源应用）")
     if patch:
         errors, warns = validate_patch(patch)
         lines = describe_patch(patch)
@@ -763,18 +769,20 @@ def plan(args, patch):
         for w in warns:
             print("        ! %s" % w)
     else:
-        print("        无补丁：草稿原样保存 —— 只能换地址，改不了任何行为；")
-        print("        v13 通常要带 --graph（否则等于白换一次站）")
-    print("  [4/9] POST /console/api/apps/<new>/workflows/publish  marked_comment=%r"
+        print("        无补丁：草稿原样保存 —— 只能换地址，改不了任何行为；通常要带 --graph")
+    print("  [4/9] POST /console/api/apps/<src>/copy → 新 app_id，随后 PUT 改名/描述/图标")
+    print("        ← 必须「改完草稿再复制」：站点绑的是复制瞬间的草稿快照；")
+    print("          copy 之后再 publish 新应用不会让站点切换（2026-10-20 实测）")
+    print("  [5/9] POST /console/api/apps/<new>/workflows/publish  marked_comment=%r"
           % (args.comment or args.name))
-    print("  [5/9] 轮询 GET /console/api/apps/<new> 与 /site，直到 workflow.id == 发布结果")
+    print("  [6/9] 轮询 GET /console/api/apps/<new> 与 /site，直到 workflow.id == 发布结果")
     print("        → 开站后再用 X-App-Code 调一次 /api/chat-messages 核对 live workflow_id")
-    print("  [6/9] POST /console/api/apps/<new>/site-enable {enable_site:true}")
+    print("  [7/9] POST /console/api/apps/<new>/site-enable {enable_site:true}")
     print("        → 取站点码 → 覆写 技术档案/readysite.txt（旧值 %s 会先打印出来）" % (old or "空"))
-    print("  [7/9] 重出二维码 参赛方案/素材/职引-二维码-公开站点.png（旧图备份 *.oldN.png.bak）")
+    print("  [8/9] 重出二维码 参赛方案/素材/职引-二维码-公开站点.png（旧图备份 *.oldN.png.bak）")
     print("        → 用 cv2 解码复核（make-png.py 只管 LOGO/背景，不管二维码）")
-    print("  [8/9] python 技术档案/run_all.py（SITE=<新码>）→ 打印 ---SCORE_SUMMARY--- 契约块")
-    print("  [9/9] 打印人工待办（交接说明 / docx / PDF / 提交材料 Markdown / 手机扫码）")
+    print("  [9/9] python 技术档案/run_all.py（SITE=<新码>）→ 打印 ---SCORE_SUMMARY--- 契约块")
+    print("  [附] 打印人工待办（交接说明 / docx / PDF / 提交材料 Markdown / 手机扫码）")
     if args.retire_old:
         print("  [附加] PUT 旧应用 %s 改名为「（回退 · 上一版）」" % args.retire_old[:8])
     print()
@@ -871,12 +879,14 @@ def main(argv=None):
            "published": False, "site": "", "site_written": False, "qr_done": False,
            "want_wf": "", "retired": False, "retire_app": args.retire_old}
 
+    # 顺序很关键（2026-10-20 实测）：先改源草稿 -> 发布源 -> 再复制。
+    # 反过来做（copy -> 改新草稿 -> publish）时，站点仍然跑 copy 那一刻的图，等于没上线。
+    if not step_draft(tok, args.src, args.src, patch, ctx):
+        return 1
+    if not step_publish(tok, args.src, args.comment or args.name, ctx):
+        return 1
     new_id = step_copy(tok, args.src, args.name, args.icon, ctx)
     if not new_id:
-        return 1
-    if not step_draft(tok, args.src, new_id, patch, ctx):
-        return 1
-    if not step_publish(tok, new_id, args.comment or args.name, ctx):
         return 1
     want_wf = step_poll_console(tok, new_id, ctx)
     code = step_site_enable(tok, new_id, ctx)
