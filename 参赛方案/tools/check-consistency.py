@@ -13,7 +13,7 @@
   D. Markdown 结构：代码围栏成对、表格列数一致
   E. 交叉引用：README 文件清单与目录实际文件一致
   F. 提交表字数：草稿 A ≤200、B ≤1000、C ≤300
-  G. 答辩题数：01 中应有 17 题
+  G. 答辩题数：01 中「### Qn ·」条数须等于 README 的「N 个答辩预测题」，且不少于 17
 
 退出码：0 全部通过；1 有失败项。
 """
@@ -136,12 +136,23 @@ def check_refs():
     readme = read('README.md')
     listed = set(re.findall(r'\]\(\./([^)]+)\)', readme))
     actual = set()
+    archived = set()
     for entry in os.listdir(ROOT):
         p = os.path.join(ROOT, entry)
         if os.path.isdir(p):
             actual.add(entry + '/')
         elif entry.endswith('.md') and entry != 'README.md':
-            actual.add(entry)
+            # 「历史-*.md」是归档区（旧台账/旧结论），条目会持续增加，
+            # 不逐个进 README 清单；但 README 必须显式交代归档前缀，否则等于藏起来
+            if entry.startswith('历史-'):
+                archived.add(entry)
+            else:
+                actual.add(entry)
+    if archived and not re.search(r'历史-', readme):
+        fail('存在 %d 个「历史-*.md」归档文件，但 README 未交代归档前缀（%s）'
+             % (len(archived), sorted(archived)[:3]))
+    elif archived:
+        ok('归档文件 %d 个，README 已交代「历史-」前缀' % len(archived))
     missing = sorted(a for a in actual if a not in listed)
     broken = sorted(l for l in listed if not os.path.exists(os.path.join(ROOT, l)))
     if missing:
@@ -175,14 +186,46 @@ def check_wordcount():
             fail('草稿 %s 超限：%d / %d 字' % (name, n, lim))
 
 
+# 站点码只有一个真源
 SITES = {
     '../技术档案/readysite.txt': None,
-    '../技术档案/finaltest_ready.py': r'SITE\s*=\s*"([^"]+)"',
-    '../技术档案/scratch/make_qr.py': r'chat/([A-Za-z0-9]+)',
 }
+# 其它脚本一律不许硬编码，必须读真源；这里校验"它们确实指向真源"
+SITE_CONSUMERS = ['../技术档案/finaltest_ready.py',
+                  '../技术档案/eval_golden.py',
+                  '../技术档案/run_all.py',
+                  '../技术档案/make_qr.py']
+QR_PNG = '素材/职引-二维码-公开站点.png'   # make_qr.py 的默认输出
 # 站点生命周期台账：本来就该记录旧站点码，跳过
 SITE_LOG = ['运行状态与待办.md', '交接说明.md']
 DEAD_SITES = ['ncfAarVCvUUWO56e', 'vBP7v5MWoBA6yCPt', 'tZ9PTLM9GtKcn3Ci', '43898f25']
+
+
+def check_qr(cur_site):
+    """材料里印的那张二维码必须指向当前站点。
+
+    站点一换、码没重出，评委扫出来就是 404，而且现场没人会发现。
+    """
+    png = os.path.join(ROOT, QR_PNG)
+    if not os.path.exists(png):
+        warn('二维码 PNG 不存在，跳过扫码校验（%s）' % QR_PNG)
+        return
+    try:
+        import cv2
+        import numpy as np
+    except ImportError:
+        warn('本机没有 cv2/numpy，无法解码二维码校验（%s）' % QR_PNG)
+        return
+    img = cv2.imdecode(np.fromfile(png, dtype=np.uint8), cv2.IMREAD_COLOR)
+    data, _, _ = cv2.QRCodeDetector().detectAndDecode(img)
+    if not data:
+        fail('二维码 PNG 解不出内容（%s），可能已损坏' % QR_PNG)
+    elif not cur_site:
+        warn('读不到站点码真源，无法比对二维码内容（%s）' % data)
+    elif cur_site in data:
+        ok('二维码指向当前站点：%s' % data)
+    else:
+        fail('二维码指向的地址与当前站点不匹配：%s（应为含 %s）' % (data, cur_site))
 
 
 def check_site():
@@ -199,13 +242,32 @@ def check_site():
         v = m.group(1) if m else s.strip().splitlines()[0].strip()
         found[rel] = v
     vals = set(found.values())
+    cur_site = found.get('../技术档案/readysite.txt', '')
     if len(vals) == 1:
-        ok('三处站点码一致：%s' % vals.pop())
+        ok('站点码真源：%s' % cur_site)
     else:
         fail('站点码不一致：%s' % found)
+
+    # 消费者脚本必须读真源，不许再硬编码（v7e 时代 finaltest_ready.py 写死过站点码）
+    for rel in SITE_CONSUMERS:
+        try:
+            s = read(rel)
+        except IOError:
+            warn('%s 不存在，跳过真源校验' % rel)
+            continue
+        if 'readysite.txt' in s:
+            ok('%s 读 readysite.txt 真源' % os.path.basename(rel))
+        else:
+            fail('%s 未引用 readysite.txt，可能又硬编码了站点码' % rel)
+
+    check_qr(cur_site)
+
     for p in md_files():
         rel0 = os.path.relpath(p, ROOT).replace(os.sep, '/')
         if rel0.startswith('tools/') or rel0 in SITE_LOG:
+            continue
+        # 「历史-*.md」是归档台账，本来就该留着旧站点码
+        if os.path.basename(rel0).startswith('历史-'):
             continue
         for i, line in enumerate(io.open(p, encoding='utf-8').read().split('\n'), 1):
             if any(e in line for e in EXEMPT):
@@ -219,14 +281,19 @@ def check_qa():
     print('\n[G] 答辩题数')
     s = read('01-路演与答辩.md')
     n_script = len(re.findall(r'^### Q\d+ ·', s, re.M))
-    if n_script == 17:
-        ok('逐字答案稿 17 题')
+    readme = read('README.md')
+    m = re.search(r'(\d+) 个答辩预测题', readme)
+    if not m:
+        warn('README 未写"N 个答辩预测题"，无法交叉校验题数')
+        return
+    n_readme = int(m.group(1))
+    if n_script == n_readme:
+        ok('逐字答案稿 %d 题，与 README 表述一致' % n_script)
     else:
-        fail('逐字答案稿为 %d 题，应为 17' % n_script)
-    if '17 个答辩预测题' in read('README.md'):
-        ok('README 中的题数表述已更新')
-    else:
-        warn('README 未写"17 个答辩预测题"')
+        fail('逐字答案稿为 %d 题，README 写 %d 题（改题了要同步 README）'
+             % (n_script, n_readme))
+    if n_script < 17:
+        fail('答辩预测题只剩 %d 题，低于 17 题基线' % n_script)
 
 
 def check_kb():

@@ -19,9 +19,14 @@
     PATROL: 5/5
     LINKS: ok
     PRIVACY: ok
+    CONSISTENCY: ok
+    SUBMISSION: missing(2)
     GOLDEN_EXIT: 0
     SCORE: 1.000
     ---END---
+
+CONSISTENCY 参与门禁（口径漂移必须挡住）；SUBMISSION 只报不拦——三样材料里
+有视频和照片只能人来录，缺项是常态，不该把整道门打成红。
 
 退出码：0 = 全绿；1 = 有分支未按预期路由 / 答案过短 / 黄金集低于 0.80；2 = 站点不可达。
 """
@@ -52,6 +57,8 @@ NO_OFFLINE = ("--no-offline" in ARGS) or ("--no-links" in ARGS)
 TOOLS_DIR = os.path.join(os.path.dirname(HERE), "参赛方案", "tools")
 LINKS_SCRIPT = os.path.join(TOOLS_DIR, "check-links.py")
 PRIVACY_SCRIPT = os.path.join(TOOLS_DIR, "check-privacy-claims.py")
+CONSISTENCY_SCRIPT = os.path.join(TOOLS_DIR, "check-consistency.py")
+SUBMISSION_SCRIPT = os.path.join(TOOLS_DIR, "check-submission.py")
 
 
 def site_code():
@@ -198,6 +205,18 @@ def run_script(abs_path, extra=None):
     return p.returncode
 
 
+def run_script_capture(abs_path, extra=None):
+    """同上，但把子进程输出收上来解析（给只报不拦的检查用）。"""
+    cmd = [sys.executable, abs_path] + (extra or [])
+    print("\n$ %s" % " ".join(cmd))
+    p = subprocess.run(cmd, cwd=HERE, capture_output=True, text=True,
+                       encoding="utf-8", errors="replace")
+    print(p.stdout or "", end="")
+    if p.stderr:
+        print(p.stderr, end="", file=sys.stderr)
+    return p.returncode, (p.stdout or "")
+
+
 def run_child(script, extra=None):
     """以子进程跑兄弟脚本，继承站点码真源。"""
     cmd = [sys.executable, os.path.join(HERE, script)] + (extra or [])
@@ -229,11 +248,21 @@ def main():
 
     links_rc = None
     privacy_rc = None
+    consistency_rc = None
+    submission_rc = None
+    submission_missing = None
     if not NO_OFFLINE:
         if os.path.exists(LINKS_SCRIPT):
             links_rc = run_script(LINKS_SCRIPT)
         if os.path.exists(PRIVACY_SCRIPT):
             privacy_rc = run_script(PRIVACY_SCRIPT)
+        if os.path.exists(CONSISTENCY_SCRIPT):
+            consistency_rc = run_script(CONSISTENCY_SCRIPT)
+        if os.path.exists(SUBMISSION_SCRIPT):
+            # 只报不拦：材料要靠人录视频拍照，缺项不该阻断门禁
+            submission_rc, submission_out = run_script_capture(SUBMISSION_SCRIPT)
+            m = re.search(r"MISSING:\s*(\d+)", submission_out)
+            submission_missing = int(m.group(1)) if m else None
 
     if not NO_GOLDEN:
         extra = ["--json", REPORT]
@@ -245,7 +274,8 @@ def main():
         full_rc = run_child("finaltest_ready.py")
 
     ok = ((npass == ntotal and ntotal > 0) and (golden_rc in (None, 0))
-          and (links_rc in (None, 0)) and (privacy_rc in (None, 0)))
+          and (links_rc in (None, 0)) and (privacy_rc in (None, 0))
+          and (consistency_rc in (None, 0)))
     print("\n" + "=" * 78)
     print("总耗时 %.1fs   站点 %s" % (time.time() - t0, SITE))
     if full_rc is not None:
@@ -254,6 +284,13 @@ def main():
     print("PATROL: %d/%d" % (npass, ntotal))
     print("LINKS: %s" % ("skipped" if links_rc is None else ("ok" if links_rc == 0 else "fail(%d)" % links_rc)))
     print("PRIVACY: %s" % ("skipped" if privacy_rc is None else ("ok" if privacy_rc == 0 else "fail(%d)" % privacy_rc)))
+    print("CONSISTENCY: %s" % ("skipped" if consistency_rc is None else ("ok" if consistency_rc == 0 else "fail(%d)" % consistency_rc)))
+    if submission_rc is None:
+        print("SUBMISSION: skipped")
+    elif submission_rc == 0:
+        print("SUBMISSION: ready")
+    else:
+        print("SUBMISSION: missing(%s)" % ("?" if submission_missing is None else submission_missing))
     print("GOLDEN_EXIT: %s" % ("skipped" if golden_rc is None else golden_rc))
     print("SCORE: %s" % ("1.000" if ok else "0.000"))
     print("SITE: %s" % SITE)
