@@ -2,7 +2,8 @@
 
 > ⚠️ 本文写于早期，部分结论可能已过时。动手前先读 [交接说明.md](../../交接说明.md) 的「不要盲目相信这些文档」。
 
-三个脚本，改完文档随时跑一遍。
+改完文档随时跑一遍。其中 **死链 / 隐私口径 / 凭据泄露 / 一致性** 四项已并入
+`python 技术档案/run_all.py` 门禁（输出 `LINKS:` / `PRIVACY:` / `SECRETS:` / `CONSISTENCY:`），不必单独跑。
 
 ## 1. `check-segments.py` —— 知识库分段预检
 
@@ -16,6 +17,20 @@ python3 tools/check-segments.py
 - token 估算偏保守（CJK 按 1 token/字），实际通常更小
 
 **什么时候跑**：新增/修改知识库内容之后，上传之前。
+
+## 1.5 `check-secrets.py` —— 凭据泄露检查
+
+```bash
+python 参赛方案/tools/check-secrets.py        # 扫 git 跟踪的文件
+python 参赛方案/tools/check-secrets.py --all  # 连未跟踪的工作区一起扫
+```
+
+- 必须为零：控制台 token 明文（拿本地 `.token` 的值做精确比对）、任何 `eyJ…` 形状的 JWT、`sk-…`
+- 只报 WARN：`app-…` 应用密钥出现在 H5 以外的地方（它是公开密钥，H5 内嵌属设计如此）
+- 为什么要它：`技术档案/README.md` 记过一条实测——`/model-providers/.../credentials`
+  对普通成员返回明文 Key；这种环境里「顺手贴一行到文档里调试」是迟早的事
+
+**什么时候跑**：每次提交前（已在门禁里，通常不用手动跑）。
 
 ## 2. `check-consistency.py` —— 方案一致性检查
 

@@ -19,6 +19,7 @@
     PATROL: 5/5
     LINKS: ok
     PRIVACY: ok
+    SECRETS: ok
     CONSISTENCY: ok
     H5: ok
     KB: 5/1.0000
@@ -28,7 +29,7 @@
     SCORE: 1.000
     ---END---
 
-CONSISTENCY / H5 / KB 参与门禁（口径漂移、页面指向错站、知识库检索不到都必须挡住）；
+SECRETS / CONSISTENCY / H5 / KB 参与门禁（口径漂移、页面指向错站、知识库检索不到都必须挡住）；
 SUBMISSION 只报不拦——三样材料里
 有视频和照片只能人来录，缺项是常态，不该把整道门打成红。
 DRAFT 也不拦：它需要控制台 token（会过期），过期时只能 skipped；但一旦报
@@ -66,6 +67,7 @@ TOOLS_DIR = os.path.join(os.path.dirname(HERE), "参赛方案", "tools")
 LINKS_SCRIPT = os.path.join(TOOLS_DIR, "check-links.py")
 PRIVACY_SCRIPT = os.path.join(TOOLS_DIR, "check-privacy-claims.py")
 CONSISTENCY_SCRIPT = os.path.join(TOOLS_DIR, "check-consistency.py")
+SECRETS_SCRIPT = os.path.join(TOOLS_DIR, "check-secrets.py")
 SUBMISSION_SCRIPT = os.path.join(TOOLS_DIR, "check-submission.py")
 DRAFT_SCRIPT = os.path.join(HERE, "workflow_diff.py")
 H5_SCRIPT = os.path.join(HERE, "h5_lint.py")
@@ -260,6 +262,7 @@ def main():
     links_rc = None
     privacy_rc = None
     consistency_rc = None
+    secrets_rc = None
     submission_rc = None
     submission_missing = None
     draft_tag = None
@@ -271,6 +274,8 @@ def main():
             links_rc = run_script(LINKS_SCRIPT)
         if os.path.exists(PRIVACY_SCRIPT):
             privacy_rc = run_script(PRIVACY_SCRIPT)
+        if os.path.exists(SECRETS_SCRIPT):
+            secrets_rc = run_script(SECRETS_SCRIPT)
         if os.path.exists(CONSISTENCY_SCRIPT):
             consistency_rc = run_script(CONSISTENCY_SCRIPT)
         if os.path.exists(H5_SCRIPT):
@@ -309,6 +314,7 @@ def main():
     ok = ((npass == ntotal and ntotal > 0) and (golden_rc in (None, 0))
           and (links_rc in (None, 0)) and (privacy_rc in (None, 0))
           and (consistency_rc in (None, 0)) and (h5_rc in (None, 0))
+          and (secrets_rc in (None, 0))
           and (kb_rc in (None, 0)))
     print("\n" + "=" * 78)
     print("总耗时 %.1fs   站点 %s" % (time.time() - t0, SITE))
@@ -318,6 +324,7 @@ def main():
     print("PATROL: %d/%d" % (npass, ntotal))
     print("LINKS: %s" % ("skipped" if links_rc is None else ("ok" if links_rc == 0 else "fail(%d)" % links_rc)))
     print("PRIVACY: %s" % ("skipped" if privacy_rc is None else ("ok" if privacy_rc == 0 else "fail(%d)" % privacy_rc)))
+    print("SECRETS: %s" % ("skipped" if secrets_rc is None else ("ok" if secrets_rc == 0 else "fail(%d)" % secrets_rc)))
     print("CONSISTENCY: %s" % ("skipped" if consistency_rc is None else ("ok" if consistency_rc == 0 else "fail(%d)" % consistency_rc)))
     print("H5: %s" % ("skipped" if h5_rc is None else ("ok" if h5_rc == 0 else "fail(%d)" % h5_rc)))
     print("KB: %s%s" % (kb_desc, "" if kb_rc in (None, 0) else "  ← 实检不通过"))
