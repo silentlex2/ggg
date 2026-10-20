@@ -88,11 +88,16 @@
   .progress .bar{height:6px;background:#eef2f8;border-radius:99px;overflow:hidden;margin-top:6px}
   .progress .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--teal),var(--brand));
                    width:0;transition:width .4s ease}
+  /* .attach 给了 display:flex，会盖掉 hidden 属性的 display:none —— 必须显式补一条 */
+  .attach[hidden]{display:none}
   .attach{display:flex;align-items:center;gap:8px;margin:0 2px 8px;padding:7px 10px;background:#eef4ff;
           border:1px solid #cfe0fb;border-radius:12px;font-size:12.5px;color:#1e40af}
   .attach .ft{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .attach button{border:0;background:transparent;color:#1e40af;cursor:pointer;font-size:12.5px;
                  text-decoration:underline;flex:0 0 auto}
+  .quick{display:flex;flex-wrap:wrap;gap:7px;margin:0 2px 8px}
+  .quick[hidden]{display:none}
+  .quick .chip{font-size:12.5px;padding:6px 11px;background:#fff}
   .clip{flex:0 0 auto;width:32px;height:32px;border:0;background:transparent;font-size:17px;
         cursor:pointer;border-radius:9px;color:#64748b;line-height:1}
   .clip:hover{background:#f1f5f9;color:var(--ink)}
@@ -169,6 +174,7 @@
   <section id="chat"></section>
 
   <div class="composer">
+    <div class="quick" id="quick" hidden></div>
     <div class="attach" id="attach" hidden>
       <span class="ft" id="filetag"></span>
       <button id="unfile">移除</button>
@@ -327,6 +333,28 @@ function typeOut(el, text){
 const UPLOAD = "https://aiagent.cqut.edu.cn:31134/v1/files/upload";
 let pendingAfterUpload = null;
 
+/* 快捷追问：面试进行中/已答满/刚出岗位表时，把「该回哪句」变成可点的按钮。
+   学生不知道要回「重练第 3 题」这种话，硬记反而卡住。 */
+function updateQuick(lastBot){
+  const bar = $("#quick");
+  let chips = [];
+  const said = lastBot || "";
+  if (/模拟面试复盘/.test(said)){
+    chips = ["再来一场模拟面试"];          /* 复盘出来了，别再把「重练第 N 题」挂在下面 */
+  } else if (state.progress > 0 && state.progress < 5){
+    chips = ["重练第 " + state.progress + " 题", "结束面试并给复盘"];
+  } else if (state.progress >= 5){
+    chips = ["看复盘报告", "重新来一场模拟面试"];
+  } else if (/匹配理由|岗位 \/ 方向|岗位名称/.test(said)){
+    chips = ["看 1 号岗位详情", "换个城市再看看"];
+  }
+  bar.innerHTML = chips.map(function(q){ return '<button class="chip">' + esc(q) + "</button>"; }).join("");
+  bar.hidden = !chips.length;
+  Array.prototype.forEach.call(bar.querySelectorAll(".chip"), function(b){
+    b.onclick = function(){ send(b.textContent); };
+  });
+}
+
 function renderAttach(){
   const box = $("#attach");
   if (!state.file){ box.hidden = true; return; }
@@ -420,6 +448,7 @@ async function send(text){
     catch(e){ bubble.textContent = buf || "（渲染失败，原文见上）"; }
     attachSrc(bubble, src);
     scanProgress(buf);
+    updateQuick(buf);
     if (buf) { state.msgs.push({ role:"bot", text: buf, src: src }); save(); }
   } catch (e){
     clearInterval(tick);
@@ -572,6 +601,8 @@ if (state.msgs.length){
   $("#home").style.display = "none"; $("#chat").classList.add("on");
   state.msgs.forEach(function(m){ renderMsg(m.role, m.text, m.src); });
   if (state.progress) setProgress(state.progress);
+  const lastBot = state.msgs.filter(function(m){ return m.role === "bot"; }).pop();
+  updateQuick(lastBot ? lastBot.text : "");
   scroll();
 }
 </script>
