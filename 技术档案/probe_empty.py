@@ -4,10 +4,11 @@
 用法：python probe_empty.py
 """
 import json, os, ssl, urllib.request
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
-TOK = open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+TOK = token()
 APP = "38c3e937-b888-4564-bb2e-39f2520e28f3"
 
 def run_node(nid, query):

@@ -10,3 +10,9 @@
 *.bak
 __pycache__/
 *.pyc
+
+# 凭据与加密归档：任何情况下都不进仓库
+.token
+*.token
+*.tar.gz.enc
+技术档案/regression-latest.json

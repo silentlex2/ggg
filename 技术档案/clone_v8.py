@@ -3,6 +3,7 @@
 用法：python clone_v8.py
 """
 import json, os, ssl, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
@@ -10,7 +11,7 @@ ICON = "ff8cb252-6223-4c43-9eb7-22844fd9adfa"
 SRC  = "38c3e937-b888-4564-bb2e-39f2520e28f3"     # 草稿已带 v6b（wf d4ba2031）
 OLD  = "9b7f0d31-17e6-4089-872a-6b846e7a5afc"     # 当前正式站(v7e)，改名为回退
 
-def tok(): return open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+def tok(): return token()
 def api(p, m="GET", b=None):
     t = tok(); h = {"Authorization": "Bearer " + t, "OperToken": t}
     data = None

@@ -3,13 +3,14 @@
 用已关停的 f2e4f2a5 做写入实验，绝不碰正式站。
 """
 import json, os, ssl, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 LAB = "f2e4f2a5-8e96-4a15-972d-4c2d5af57669"   # 已关停的实验应用
 PROD = "4a634be6-bb6b-4c80-b8ca-7aa9e02ccede"  # 正式站
 
-def tok(): return open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+def tok(): return token()
 def api(p, m="GET", b=None):
     t = tok(); h = {"Authorization": "Bearer " + t, "OperToken": t}
     data = None

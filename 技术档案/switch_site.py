@@ -8,13 +8,14 @@
   3. 打印两个站点的当前状态
 """
 import json, os, ssl, sys, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 NEW = "38c3e937-b888-4564-bb2e-39f2520e28f3"
 OLD = "69fa1c02-27bf-41fc-a7d2-0c068480c034"
-TOK = open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+TOK = token()
 H = {"Authorization": "Bearer " + TOK, "OperToken": TOK, "Content-Type": "application/json"}
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 

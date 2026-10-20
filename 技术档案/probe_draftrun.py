@@ -2,12 +2,13 @@
 # -*- coding: utf-8 -*-
 """验证 draft 运行端点 + 应用绑定的 workflow 版本。"""
 import json, os, ssl, sys, time, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 APP = "69fa1c02-27bf-41fc-a7d2-0c068480c034"
-TOK = open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+TOK = token()
 H = {"Authorization": "Bearer " + TOK, "OperToken": TOK, "Content-Type": "application/json"}
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 

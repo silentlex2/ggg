@@ -17,7 +17,7 @@
 
 退出码：0 = SCORE >= 0.80；1 = 低于阈值（用作回归门）。
 """
-import json, re, ssl, sys, time, urllib.request, urllib.error
+import json, os, re, ssl, sys, time, urllib.request, urllib.error
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 CTX = ssl.create_default_context()
@@ -25,7 +25,17 @@ CTX.check_hostname = False
 CTX.verify_mode = ssl.CERT_NONE
 
 ARGS = list(sys.argv[1:])
-SITE = ARGS[0] if ARGS and not ARGS[0].startswith("--") else "HeYM5jZOBsKPURdj"
+def _default_site():
+    """站点码唯一真源：环境变量 SITE > 同目录 readysite.txt（换站只改那一个文件）。"""
+    env = os.environ.get("SITE", "").strip()
+    if env:
+        return env
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "readysite.txt"),
+              "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+
+SITE = ARGS[0] if ARGS and not ARGS[0].startswith("--") else _default_site()
 JSON_OUT = ARGS[ARGS.index("--json") + 1] if "--json" in ARGS else None
 ONLY = set(ARGS[ARGS.index("--only") + 1].split(",")) if "--only" in ARGS else None
 

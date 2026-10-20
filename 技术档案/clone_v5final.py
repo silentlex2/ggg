@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """把带 v5f 的草稿（在 38c3e937 上）复制成正式站，并清理中间产物。"""
 import json, os, ssl, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 ICON = "ff8cb252-6223-4c43-9eb7-22844fd9adfa"
 SRC  = "38c3e937-b888-4564-bb2e-39f2520e28f3"     # 草稿已带 v5f
 MID  = "aa34a923-086f-4eb4-b220-dd46b3439140"     # v5e 中间产物，待删
-def tok(): return open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+def tok(): return token()
 def api(p, m="GET", b=None):
     t = tok(); h = {"Authorization": "Bearer " + t, "OperToken": t}
     data = None

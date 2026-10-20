@@ -13,6 +13,7 @@
 默认 app_id = 正式站应用（38c3e937-…）。
 """
 import json, os, ssl, sys, urllib.request
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -24,7 +25,7 @@ CTX.verify_mode = ssl.CERT_NONE
 
 
 def token():
-    return open(os.path.join(SCRATCH, ".token"), encoding="utf-8").read().strip()
+    return token()
 
 
 def api(path, method="GET", body=None):

@@ -5,6 +5,7 @@
 用法：python probe_structure.py
 """
 import json, os, re, ssl, sys, time, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://aiagent.cqut.edu.cn:31134"

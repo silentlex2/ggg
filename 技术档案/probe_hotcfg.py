@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """探测 2：站点开场白/预置问题存在哪、能不能热更新。"""
 import json, os, ssl, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -10,7 +11,7 @@ V6SITE = "g2XDtP2IvbgTKh8k"
 V7SITE = "j5qWmoi0m0UYWDpj"
 
 
-def tok(): return open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+def tok(): return token()
 
 
 def api(p, m="GET", b=None):

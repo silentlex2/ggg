@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
 """把 v6 应用的 features.opening_statement 恢复干净（去掉热更新探测标记）。"""
 import json, os, ssl, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 V6APP = "9fd8b002-1a55-456e-90b9-991e7ff8a621"
 MARK = "【热更新探测20261014】"
 
-def tok(): return open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+def tok(): return token()
 def api(p, m="GET", b=None):
     t = tok(); h = {"Authorization": "Bearer " + t, "OperToken": t}
     data = None

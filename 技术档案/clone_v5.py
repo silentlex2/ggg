@@ -4,6 +4,7 @@
    本脚本：探站点端点 -> 复制 -> 修图标/名字 -> 发布 -> 打印新站点码。
 """
 import json, os, ssl, sys, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -12,7 +13,7 @@ ICON = "ff8cb252-6223-4c43-9eb7-22844fd9adfa"
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 
 def tok():
-    return open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+    return token()
 
 def api(path, method="GET", body=None, ok=(200, 201)):
     t = tok()

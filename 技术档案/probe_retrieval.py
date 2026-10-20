@@ -5,6 +5,7 @@
 用法：python probe_retrieval.py
 """
 import json, os, ssl, sys, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
@@ -13,7 +14,7 @@ APP = "69fa1c02-27bf-41fc-a7d2-0c068480c034"
 NODE_JOB = "1791552000010"   # 岗位知识库
 NODE_PE = "1791600000030"    # 求职意向提取
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
-TOK = open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+TOK = token()
 H = {"Authorization": "Bearer " + TOK, "OperToken": TOK, "Content-Type": "application/json"}
 
 

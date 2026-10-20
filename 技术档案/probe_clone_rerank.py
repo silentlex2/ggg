@@ -6,12 +6,13 @@
 默认读取 scratch/rerank-app.txt。
 """
 import json, os, ssl, sys, time, urllib.request, urllib.error
+from tok import token  # 控制台 token 统一入口（见 tok.py）
 sys.stdout.reconfigure(encoding="utf-8")
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
 HERE = os.path.dirname(os.path.abspath(__file__))
 ICON = "ff8cb252-6223-4c43-9eb7-22844fd9adfa"
-TOK = open(os.path.join(HERE, "scratch", ".token"), encoding="utf-8").read().strip()
+TOK = token()
 H = {"Authorization": "Bearer " + TOK, "OperToken": TOK, "Content-Type": "application/json"}
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 RK = {"provider": "openai_api_compatible", "model": "bge-reranker-v2-m3"}

@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import json, ssl, re, time, urllib.request
+import json, os, ssl, re, time, urllib.request
 
 BASE = "https://aiagent.cqut.edu.cn:31134"
-SITE = "HeYM5jZOBsKPURdj"  # 2026-10-14 v7e 正式站（v7a-e：重练分支 / 收尾硬规则 / 政策拒答给路径 / 进度 max(M+1,C)）
+def _default_site():
+    """站点码唯一真源：环境变量 SITE > 同目录 readysite.txt（换站只改那一个文件）。"""
+    env = os.environ.get("SITE", "").strip()
+    if env:
+        return env
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "readysite.txt"),
+              "r", encoding="utf-8") as f:
+        return f.read().strip()
+
+
+SITE = _default_site()  # 原硬编码 "HeYM5jZOBsKPURdj"（v7e 时代）已改为读真源
 CTX = ssl.create_default_context(); CTX.check_hostname = False; CTX.verify_mode = ssl.CERT_NONE
 
 req = urllib.request.Request(BASE + "/api/passport", headers={"X-App-Code": SITE})
