@@ -60,6 +60,9 @@
   .bubble th{background:#f3f7fd}
   .bubble code{background:#f1f5f9;border-radius:5px;padding:1px 5px;font-size:13px}
   .bubble hr{border:0;border-top:1px dashed var(--line);margin:10px 0}
+  .src{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;padding-top:8px;border-top:1px dashed var(--line)}
+  .tag{font-size:11.5px;color:#54617a;background:#f4f7fc;border:1px solid var(--line);
+       border-radius:999px;padding:2px 8px;line-height:1.7;cursor:help}
   .typing{display:inline-block;width:7px;height:15px;background:var(--brand);border-radius:2px;
           animation:blink 1s steps(2) infinite;vertical-align:-2px;margin-left:3px}
   @keyframes blink{0%,49%{opacity:1}50%,100%{opacity:0}}
@@ -81,6 +84,11 @@
        padding:9px 12px;font-size:13px;display:flex;justify-content:space-between;gap:10px}
   .err button{border:0;background:transparent;color:var(--warn);text-decoration:underline;cursor:pointer}
   .foot{text-align:center;font-size:11px;color:#93a1b5;padding:6px 0 0}
+  @media (max-width:430px){
+    header{padding:10px 12px;gap:8px}
+    .titles span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .ghost{padding:5px 9px;font-size:11.5px}
+  }
   @media (min-width:560px){ .app{box-shadow:0 0 0 1px var(--line),0 20px 60px rgba(15,23,42,.06)} }
 </style>
 </head>
@@ -92,6 +100,7 @@
       <b>职引 · 校园就业智能体</b>
       <span id="sub">简历诊断 · 岗位匹配 · 模拟面试 · 政策咨询</span>
     </div>
+    <button class="ghost" id="exportBtn">导出</button>
     <button class="ghost" id="newChat">新对话</button>
   </header>
 
@@ -166,7 +175,39 @@ function md(t){
   return s;
 }
 
-function renderMsg(role, text){
+/* 答案里的引用来源：metadata.retriever_resources -> 「岗位库 ×5」这样的标签 */
+const KBLABEL = { KB1:"简历规范库", KB2:"面试题库", KB3:"专业岗位对照",
+                  KB4:"岗位库", KB5:"政策库", KB6:"常见问答" };
+function kbName(n){
+  if (!n) return "知识库";
+  const m = n.match(/^(KB\d)/i);
+  if (m && KBLABEL[m[1].toUpperCase()]) return KBLABEL[m[1].toUpperCase()];
+  return n.replace(/^KB\d[-·]?/i, "").slice(0, 12) || n;
+}
+function srcOf(res){
+  const map = {};
+  (res || []).forEach(function(r){
+    const n = kbName(r.dataset_name);
+    const s = Number(r.score) || 0;
+    if (!map[n]) map[n] = { n: n, c: 0, s: 0 };
+    map[n].c++;
+    if (s > map[n].s) map[n].s = s;
+  });
+  return Object.keys(map).map(function(k){ return map[k]; })
+    .sort(function(a, b){ return b.s - a.s; });
+}
+function srcHtml(src){
+  if (!src || !src.length) return "";
+  return '<div class="src">' + src.map(function(x){
+    return '<span class="tag" title="命中 ' + x.c + ' 段，最高匹配 ' + x.s.toFixed(2)
+      + '">📚 ' + esc(x.n) + ' ×' + x.c + '</span>';
+  }).join("") + '</div>';
+}
+function attachSrc(bubble, src){
+  if (src && src.length) bubble.insertAdjacentHTML("beforeend", srcHtml(src));
+}
+
+function renderMsg(role, text, src){
   const row = document.createElement("div");
   row.className = "row " + (role === "me" ? "me" : "bot");
   const b = document.createElement("div");
@@ -174,6 +215,7 @@ function renderMsg(role, text){
   b.innerHTML = role === "me" ? esc(text) : md(text);
   row.appendChild(b);
   $("#chat").appendChild(row);
+  if (role !== "me") attachSrc(b, src);
   scroll();
   return b;
 }
@@ -258,10 +300,12 @@ async function send(text){
     if (j.conversation_id){ state.cid = j.conversation_id; save(); }
     if (j.event === "error") throw new Error(j.message || "模型返回错误");
     buf = j.answer || "";
+    const src = srcOf(((j.metadata || {}).retriever_resources) || []);
     try { await typeOut(bubble, buf); }
     catch(e){ bubble.textContent = buf || "（渲染失败，原文见上）"; }
+    attachSrc(bubble, src);
     scanProgress(buf);
-    if (buf) { state.msgs.push({ role:"bot", text: buf }); save(); }
+    if (buf) { state.msgs.push({ role:"bot", text: buf, src: src }); save(); }
   } catch (e){
     clearInterval(tick);
     bubble.remove();
@@ -288,6 +332,26 @@ $("#input").addEventListener("input", function(e){
 Array.prototype.forEach.call(document.querySelectorAll(".card"), function(c){ c.onclick = function(){ send(c.dataset.q); }; });
 $("#chips").innerHTML = PRESET.map(function(q){ return '<button class="chip">' + esc(q) + '</button>'; }).join("");
 Array.prototype.forEach.call(document.querySelectorAll(".chip"), function(c){ c.onclick = function(){ send(c.textContent); }; });
+/* 导出成 Markdown：学生可以把诊断结果直接给老师看，也方便留档 */
+function exportMd(){
+  if (!state.msgs.length){ alert("还没有对话内容可以导出"); return; }
+  const lines = ["# 职引 · 会话记录", "",
+                 "导出时间：" + new Date().toLocaleString("zh-CN"), ""];
+  state.msgs.forEach(function(m){
+    lines.push(m.role === "me" ? "## 我" : "## 职引", "", (m.text || "").trim(), "");
+    if (m.src && m.src.length){
+      lines.push("> 参考：" + m.src.map(function(x){ return x.n + " ×" + x.c; }).join("、"), "");
+    }
+  });
+  const blob = new Blob([lines.join("\n")], { type: "text/markdown;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "职引-会话-" + new Date().toISOString().slice(0, 10) + ".md";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); }, 4000);
+}
+$("#exportBtn").onclick = exportMd;
+
 $("#newChat").onclick = function(){
   if (state.msgs.length && !confirm("清空当前对话？")) return;
   localStorage.removeItem(STORE); location.reload();
@@ -295,7 +359,7 @@ $("#newChat").onclick = function(){
 
 if (state.msgs.length){
   $("#home").style.display = "none"; $("#chat").classList.add("on");
-  state.msgs.forEach(function(m){ renderMsg(m.role, m.text); });
+  state.msgs.forEach(function(m){ renderMsg(m.role, m.text, m.src); });
   if (state.progress) setProgress(state.progress);
   scroll();
 }
