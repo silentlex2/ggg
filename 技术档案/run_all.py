@@ -20,13 +20,14 @@
     LINKS: ok
     PRIVACY: ok
     CONSISTENCY: ok
+    H5: ok
     SUBMISSION: missing(2)
     DRAFT: same
     GOLDEN_EXIT: 0
     SCORE: 1.000
     ---END---
 
-CONSISTENCY 参与门禁（口径漂移必须挡住）；SUBMISSION 只报不拦——三样材料里
+CONSISTENCY / H5 参与门禁（口径漂移、页面指向错站必须挡住）；SUBMISSION 只报不拦——三样材料里
 有视频和照片只能人来录，缺项是常态，不该把整道门打成红。
 DRAFT 也不拦：它需要控制台 token（会过期），过期时只能 skipped；但一旦报
 drift，说明有人在控制台手改了线上草稿而仓库没跟上，值得立刻看一眼。
@@ -63,6 +64,7 @@ PRIVACY_SCRIPT = os.path.join(TOOLS_DIR, "check-privacy-claims.py")
 CONSISTENCY_SCRIPT = os.path.join(TOOLS_DIR, "check-consistency.py")
 SUBMISSION_SCRIPT = os.path.join(TOOLS_DIR, "check-submission.py")
 DRAFT_SCRIPT = os.path.join(HERE, "workflow_diff.py")
+H5_SCRIPT = os.path.join(HERE, "h5_lint.py")
 
 
 def site_code():
@@ -256,6 +258,7 @@ def main():
     submission_rc = None
     submission_missing = None
     draft_tag = None
+    h5_rc = None
     if not NO_OFFLINE:
         if os.path.exists(LINKS_SCRIPT):
             links_rc = run_script(LINKS_SCRIPT)
@@ -263,6 +266,8 @@ def main():
             privacy_rc = run_script(PRIVACY_SCRIPT)
         if os.path.exists(CONSISTENCY_SCRIPT):
             consistency_rc = run_script(CONSISTENCY_SCRIPT)
+        if os.path.exists(H5_SCRIPT):
+            h5_rc, _ = run_script_capture(H5_SCRIPT)
         if os.path.exists(SUBMISSION_SCRIPT):
             # 只报不拦：材料要靠人录视频拍照，缺项不该阻断门禁
             submission_rc, submission_out = run_script_capture(SUBMISSION_SCRIPT)
@@ -285,7 +290,7 @@ def main():
 
     ok = ((npass == ntotal and ntotal > 0) and (golden_rc in (None, 0))
           and (links_rc in (None, 0)) and (privacy_rc in (None, 0))
-          and (consistency_rc in (None, 0)))
+          and (consistency_rc in (None, 0)) and (h5_rc in (None, 0)))
     print("\n" + "=" * 78)
     print("总耗时 %.1fs   站点 %s" % (time.time() - t0, SITE))
     if full_rc is not None:
@@ -295,6 +300,7 @@ def main():
     print("LINKS: %s" % ("skipped" if links_rc is None else ("ok" if links_rc == 0 else "fail(%d)" % links_rc)))
     print("PRIVACY: %s" % ("skipped" if privacy_rc is None else ("ok" if privacy_rc == 0 else "fail(%d)" % privacy_rc)))
     print("CONSISTENCY: %s" % ("skipped" if consistency_rc is None else ("ok" if consistency_rc == 0 else "fail(%d)" % consistency_rc)))
+    print("H5: %s" % ("skipped" if h5_rc is None else ("ok" if h5_rc == 0 else "fail(%d)" % h5_rc)))
     print("DRAFT: %s" % (draft_tag or "skipped"))
     if submission_rc is None:
         print("SUBMISSION: skipped")

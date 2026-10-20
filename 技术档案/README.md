@@ -65,6 +65,15 @@
 | `workflow_diff.py` | 草稿漂移检测：线上草稿 vs 快照逐节点比提示词哈希。`--dump-only` 建档、`--ref` 换基准、`--restore --yes` 写回草稿、`--list` 列快照 |
 | `readysite.txt` | 当前公开站点码。~~`81sZtuESIgx4USJK`~~ → ~~`ncfAarVCvUUWO56e`~~ → ~~`tZ9PTLM9GtKcn3Ci`~~ → ~~`vBP7v5MWoBA6yCPt`~~ → ~~`3PNowdyi2c13Khnl`（v2/v3，已关站）~~ → ~~`jb3VQ96s2Vmv5aP4`（v4，岗位库 rerank，留作回退）~~ → ~~`3dx3j3cacsfYdLe8`（v5，留作回退）~~ → ~~`g2XDtP2IvbgTKh8k`（v6，评分总分挪到分项之后，留作回退）~~ → ~~`j5qWmoi0m0UYWDpj`（v7，v6b 技能证据纪律 / 时效说明 / 专业兜底 / 来源冲突裁决）~~ → ~~`wcQKFhBvvTDarYlC`（v7d，v7a/b/c 重练分支 + 收尾硬规则 + 政策拒答给路径）~~ → ~~`bZ98CHD4YaVpajtY`（v7e：面试进度 max(M+1,C) + 重练只走一轮）~~ → ~~`rWxRKhq13wV1PS3X`（v8：要求—证据矩阵 / 隐私遮罩 / 证据四值 / 政策引用溯源）~~ → ~~`Y7oLU89eNCqPvcJV`（v8b：结尾修正 + 评分档位锚点）~~ → ~~`Se6izgWbb0jK9DBZ`（v9：覆盖度统计 + 岗位原文逐字摘录 + 追问预演 + 政策分档）~~ → ~~`l8HJAJ78lH0XfGzn`（v10：面试收尾优先级 + 判定只看标记 + 不打发用户 + 硬门槛判据）~~ → ~~`vs58iotZUg5QX4OG`（v11：会话起始守卫 + 题型标记硬性 + 简历方法分流 + 闲聊收尾四项）~~ → ~~`HeYM5jZOBsKPURdj`（2026-10-15 v12：简历优先规则 + 方法类提问归闲聊 + 分类器纠偏）~~ → ~~v13–v18~~ → **`YnmaDNCRpd1otyrC`（2026-10-20 v19：上下文通道 + 简历上传 + 进度兜底，现役）**。完整版本链与回退站点见 `参赛方案/运行状态与待办.md` |
 
+## 一键门禁与体检
+
+| 文件 | 作用 |
+| --- | --- |
+| `run_all.py` | 一键门禁：五分支巡检 + 黄金集 + 死链 / 隐私 / 一致性 / H5 四道离线检查 + 草稿漂移，输出 `---SCORE_SUMMARY---` 契约 |
+| `h5_lint.py` | 自建前端静态体检：`node --check` 语法、页面里的站点码是否等于 readysite.txt、有无 CDN 外链、`.attach[hidden]` 那条已知回归、无障碍底线、体积预算。`--file` 可查任意副本 |
+| `workflow_diff.py` | 线上草稿 vs 仓库快照逐节点比哈希；`--dump-only` 建档、`--restore --yes` 写回 |
+| `gen_submission_form.py` / `make_form_pdf.py` | 生成提交表 docx 与 PDF，正文三段字数超限直接非零退出 |
+
 ## scratch/
 
 ~~828 个~~ → 实际 **947 个**一次性探查脚本，按产生顺序堆着，没有整理价值。
