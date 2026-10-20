@@ -12,7 +12,22 @@ SRC  = os.path.join(ROOT, r"参赛方案\02-提交材料清单.md")
 MAT  = os.path.join(ROOT, r"参赛方案\提交材料")
 ATT  = os.path.join(ROOT, "过程截图", "2026-10-15-v7e", "提交表配图")
 OUTD = os.path.join(MAT, r"作品提交表-职引.docx")
-SITE = "https://aiagent.cqut.edu.cn:31134/chat/HeYM5jZOBsKPURdj"
+# 站点地址只认 readysite.txt 一个真源。之前这里写死过 HeYM5jZOBsKPURdj（v12 的码），
+# 重跑一次生成器就会把提交表里的地址打回旧站，属于"跑一下就出错"的坑。
+SITE_CODE = open(os.path.join(ROOT, "技术档案", "readysite.txt"), encoding="utf-8").read().strip()
+SITE = "https://aiagent.cqut.edu.cn:31134/chat/%s" % SITE_CODE
+# 队伍信息（姓名/学号/手机号只能本人填）。没有这个文件就保留【待填】，不瞎编。
+INFO_PATH = os.path.join(MAT, "队伍信息.json")
+INFO = {}
+if os.path.exists(INFO_PATH):
+    import json as _json
+    INFO = _json.load(open(INFO_PATH, encoding="utf-8"))
+def info(key, fallback=None):
+    # 注意：默认参数在 def 时求值，PH 是在下面才定义的，所以这里只能用 None 占位
+    value = (INFO.get(key) or "").strip()
+    if value:
+        return value
+    return PH if fallback is None else fallback
 W = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
 PH = "【待填】"
 IMGS = [
@@ -69,10 +84,13 @@ d = docx.Document(TPL)
 tb = d.tables[0]
 def T(ri, ti): return tb.rows[ri]._tr.findall(W+"tc")[ti]
 
-set_tc(T(1, 1), ["职引小队"])
-set_tc(T(2, 1), [PH]); set_tc(T(2, 3), [PH]); set_tc(T(2, 5), [PH])
-set_tc(T(3, 1), [PH + "（单人参赛，与队长一致）"])
-set_tc(T(4, 1), ["无（选填）"])
+set_tc(T(1, 1), [info("队伍名称", "职引小队")])
+set_tc(T(2, 1), [info("队长姓名")])
+set_tc(T(2, 3), [info("队长学号")])
+set_tc(T(2, 5), [info("队长手机号")])
+set_tc(T(3, 1), [info("成员姓名和学号", PH + "（单人参赛，与队长一致）")])
+set_tc(T(4, 1), [info("指导教师", "无（选填）")])
+FILLED = sum(1 for k in ("队长姓名", "队长学号", "队长手机号") if (INFO.get(k) or "").strip())
 set_tc(T(6, 1), ["\u201c职引\u201d\u2014\u2014面向高校学生的就业智能体"])
 set_tc(T(6, 3), ["管理服务智能体"])
 set_tc(T(7, 1), [A], align=WD_ALIGN_PARAGRAPH.LEFT, line_spacing=1.15)
@@ -112,3 +130,19 @@ for i, (fn, cap) in enumerate(IMGS, 1):
 
 d.save(OUTD)
 print("docx:", os.path.getsize(OUTD), "bytes | images:", len(docx.Document(OUTD).inline_shapes))
+
+# 生成即自检：地址必须与 readysite 一致，且【待填】数量要说清楚
+check = docx.Document(OUTD)
+text = "".join(node.text or "" for node in check.element.body.iter(W + "t"))
+left = text.count(PH)
+url_ok = SITE in text
+print("")
+print("---FORM_SUMMARY---")
+print("SITE: %s" % SITE_CODE)
+print("URL_IN_DOC: %s" % ("yes" if url_ok else "no"))
+print("PLACEHOLDER_LEFT: %d" % left)
+print("FILLED: %d/3 （队长姓名/学号/手机号）" % FILLED)
+print("IMAGES: %d" % len(check.inline_shapes))
+print("---END---")
+if not url_ok:
+    sys.exit("提交表里的作品地址与 readysite.txt 不一致，停止")
