@@ -12,10 +12,13 @@
     python run_all.py --no-golden     # 只跑五分支巡检（约 1.5 分钟）
     python run_all.py --only 边界,拒答 # 巡检照跑，黄金集只跑指定组
     python run_all.py --full          # 追加 finaltest_ready 全流程（约 6 分钟，仅提示不拦截）
+    python run_all.py --no-links      # 跳过提交材料死链检查（默认会跑，纯离线）
 
 输出末尾固定契约（可被其它脚本 / CI grep）：
     ---SCORE_SUMMARY---
     PATROL: 5/5
+    LINKS: ok
+    GOLDEN_EXIT: 0
     SCORE: 1.000
     ---END---
 
@@ -43,6 +46,9 @@ ARGS = list(sys.argv[1:])
 ONLY = set(ARGS[ARGS.index("--only") + 1].split(",")) if "--only" in ARGS else None
 NO_GOLDEN = "--no-golden" in ARGS
 FULL = "--full" in ARGS
+NO_LINKS = "--no-links" in ARGS
+# 提交材料的死链检查是纯离线检查（不碰站点），放进这道门最划算：改完文档随手就跑到了
+LINKS_SCRIPT = os.path.join(os.path.dirname(HERE), "参赛方案", "tools", "check-links.py")
 
 
 def site_code():
@@ -181,6 +187,14 @@ def patrol():
     return rows, npass, total
 
 
+def run_script(abs_path, extra=None):
+    """跑任意路径的脚本（用于 参赛方案/tools 下的离线检查）。"""
+    cmd = [sys.executable, abs_path] + (extra or [])
+    print("\n$ %s" % " ".join(cmd))
+    p = subprocess.run(cmd, cwd=HERE)
+    return p.returncode
+
+
 def run_child(script, extra=None):
     """以子进程跑兄弟脚本，继承站点码真源。"""
     cmd = [sys.executable, os.path.join(HERE, script)] + (extra or [])
@@ -210,6 +224,10 @@ def main():
         print("---END---")
         return 2
 
+    links_rc = None
+    if not NO_LINKS and os.path.exists(LINKS_SCRIPT):
+        links_rc = run_script(LINKS_SCRIPT)
+
     if not NO_GOLDEN:
         extra = ["--json", REPORT]
         if ONLY:
@@ -219,13 +237,14 @@ def main():
     if FULL:
         full_rc = run_child("finaltest_ready.py")
 
-    ok = (npass == ntotal and ntotal > 0) and (golden_rc in (None, 0))
+    ok = (npass == ntotal and ntotal > 0) and (golden_rc in (None, 0)) and (links_rc in (None, 0))
     print("\n" + "=" * 78)
     print("总耗时 %.1fs   站点 %s" % (time.time() - t0, SITE))
     if full_rc is not None:
         print("全流程回归（仅提示，不参与门禁）：退出码 %s，人工看上方输出" % full_rc)
     print("---SCORE_SUMMARY---")
     print("PATROL: %d/%d" % (npass, ntotal))
+    print("LINKS: %s" % ("skipped" if links_rc is None else ("ok" if links_rc == 0 else "fail(%d)" % links_rc)))
     print("GOLDEN_EXIT: %s" % ("skipped" if golden_rc is None else golden_rc))
     print("SCORE: %s" % ("1.000" if ok else "0.000"))
     print("SITE: %s" % SITE)
