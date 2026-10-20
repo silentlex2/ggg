@@ -182,7 +182,15 @@ def run_case(g, tok):
     miss, bad, truncs = [], [], []
     for i in graded:
         a = answers[i]
-        miss += [tag(i) + k for k in g["must"] if k not in a]
+        for k in g["must"]:
+            # must 里以 | 开头 = 同义候选（"|上传|传原文件|发我" 命中任一即可）。
+            # 平台措辞每轮都换，逐字要求某一种说法会把合格答案判成失败。
+            if k.startswith("|"):
+                alts = [x for x in k.strip("|").split("|") if x]
+                if not any(x in a for x in alts):
+                    miss.append(tag(i) + "/".join(alts))
+            elif k not in a:
+                miss.append(tag(i) + k)
         bad += [tag(i) + k for k in g["must_not"] if k in a]
         d = trunc_detail(a)
         if d:

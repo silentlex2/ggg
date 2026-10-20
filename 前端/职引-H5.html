@@ -299,9 +299,19 @@ function setProgress(n){
     + Math.min(100, n / 5 * 100) + '%"></i></div>';
 }
 const CN_NUM = { "一":1, "二":2, "三":3, "四":4, "五":5, "六":6, "七":7, "八":8, "九":9, "十":10 };
+/* 进度只许单向前进：平台偶发把进度行写回小数字（黄金集 E7 实测 [1,2,3,2]，
+   答完第 3 题后的一次回答里又写回 2/5）。学生看到进度条往回走会以为白答了，
+   所以这里挡掉倒退；真要重开一轮，由 resetInterview() 显式归零。 */
+function applyProgress(n){
+  if (!n){ setProgress(0); return; }
+  if (n < state.progress && state.progress < 5) return;
+  setProgress(n);
+}
+function resetInterview(){ setProgress(0); }
+
 function scanProgress(t){
   const m = t.match(/面试进度[：:]\s*(\d)\s*\/\s*5/);
-  if (m){ setProgress(parseInt(m[1], 10)); return; }
+  if (m){ applyProgress(parseInt(m[1], 10)); return; }
   /* 兜底：面试官约十分之一的次数只给「第 N 题」不给「面试进度」行（黄金集 A3 抓到的），
      没有这层兜底，进度条和快捷按钮都会消失。复盘文本里也会出现「第 3 题」，必须先排除。 */
   if (/模拟面试复盘|面试复盘/.test(t)) return;
@@ -309,7 +319,7 @@ function scanProgress(t){
   if (!q) return;
   const raw = q[1];
   const n = /^\d+$/.test(raw) ? parseInt(raw, 10) : CN_NUM[raw];
-  if (n && n > state.progress) setProgress(n);
+  if (n) applyProgress(n);
 }
 
 function typeOut(el, text){
@@ -421,6 +431,9 @@ async function send(text){
   $("#sub").textContent = "回答中…";
 
   addMsg("me", text);
+  /* 同一个会话里重开一场面试：进度条必须先归零，
+     否则上面的单调守卫会把新的一轮 1/5 当成倒退挡掉 */
+  if (/重新开始|再来一场|再面一次|重开面试|换个岗位再面/.test(text)) resetInterview();
   const ctx = ctxOf();
   const bubble = renderMsg("bot", "");
   bubble.innerHTML = '<span class="typing"></span>';

@@ -8,6 +8,7 @@
 检查项（改完文档后跑一遍，避免口径漂移）：
   A. 口径一致性：平台能力 14 项 / 9 类平台节点 / 答辩亮点 14 条 / 三大功能 + 1 加分项
   B. 陈旧表述：不得出现 "16 项"、"8 项高阶"、"NL2SQL" 等已废弃口径（行内含豁免词者除外）
+  I. 黄金集条数：eval_cases.py 实际条数 / 分组条数 与 08 文档、README 对齐
   H. 站点码一致：readysite.txt / finaltest_ready.py / make_qr.py 三处必须一致，且不得残留旧站点码
   C. 知识库：KB4 的 csv 与 md 条数/编号一致，且与各文档中的数字一致
   D. Markdown 结构：代码围栏成对、表格列数一致
@@ -296,6 +297,57 @@ def check_qa():
         fail('答辩预测题只剩 %d 题，低于 17 题基线' % n_script)
 
 
+def check_cases():
+    """黄金集条数：以 eval_cases.py 为唯一真源，和文档里写的数字对齐。
+
+    这是最容易悄悄漂的一处——加了几条用例，文档里的"46 条"没人改，
+    等到答辩被问"你们测了多少条"就露馅。
+    """
+    print('\n[I] 黄金集条数与文档')
+    src = os.path.join(os.path.dirname(ROOT), '技术档案', 'eval_cases.py')
+    if not os.path.exists(src):
+        warn('找不到 eval_cases.py，跳过用例数校验')
+        return
+    body = io.open(src, encoding='utf-8').read()
+    cats = re.findall(r'cat="([^"]+)"', body)
+    total = len(cats)
+    if not total:
+        warn('eval_cases.py 里没解析到用例（cat="..." 一个也没有）')
+        return
+    counts = {}
+    for c in cats:
+        counts[c] = counts.get(c, 0) + 1
+    ok('黄金集共 %d 条：%s' % (total, '，'.join('%s %d' % kv for kv in sorted(counts.items()))))
+
+    doc = read('08-测试与验收.md')
+    m = re.search(r'黄金集回归（自动化，(\d+) 条）', doc)
+    if not m:
+        warn('08 文档没写"黄金集回归（自动化，N 条）"，无法交叉校验')
+    elif int(m.group(1)) != total:
+        fail('08 文档写 %s 条，eval_cases.py 实际 %d 条' % (m.group(1), total))
+    else:
+        ok('08 文档条数与代码一致（%d）' % total)
+
+    # 分组表：| A 意图分类 | 8 | ... 逐组核对
+    table = re.findall(r'^\|\s*[A-F][^|]*\|\s*(\d+)\s*\|', doc, re.M)
+    if not table:
+        warn('08 文档分组表没解析到条数')
+        return
+    doc_counts = [int(x) for x in table]
+    if sorted(doc_counts) == sorted(counts.values()):
+        ok('分组条数与代码一致：%s' % doc_counts)
+    else:
+        fail('分组条数不一致：文档 %s / 代码 %s'
+             % (sorted(doc_counts), sorted(counts.values())))
+    readme = read('README.md')
+    if re.search(r'黄金集 (\d+) 条', readme):
+        n = int(re.search(r'黄金集 (\d+) 条', readme).group(1))
+        if n != total:
+            fail('参赛方案/README 写黄金集 %d 条，实际 %d 条' % (n, total))
+        else:
+            ok('README 条数与代码一致（%d）' % total)
+
+
 def check_kb():
     print('\n[C] 知识库一致性')
     csv_path = os.path.join(ROOT, '知识库', 'KB4-岗位JD库.csv')
@@ -360,6 +412,7 @@ def main():
     check_terms()
     check_stale()
     check_kb()
+    check_cases()
     check_markdown()
     check_refs()
     check_wordcount()
