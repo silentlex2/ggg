@@ -12,12 +12,13 @@
     python run_all.py --no-golden     # 只跑五分支巡检（约 1.5 分钟）
     python run_all.py --only 边界,拒答 # 巡检照跑，黄金集只跑指定组
     python run_all.py --full          # 追加 finaltest_ready 全流程（约 6 分钟，仅提示不拦截）
-    python run_all.py --no-links      # 跳过提交材料死链检查（默认会跑，纯离线）
+    python run_all.py --no-offline    # 跳过材料侧两道离线检查（死链 / 隐私口径）；--no-links 是它的旧名
 
 输出末尾固定契约（可被其它脚本 / CI grep）：
     ---SCORE_SUMMARY---
     PATROL: 5/5
     LINKS: ok
+    PRIVACY: ok
     GOLDEN_EXIT: 0
     SCORE: 1.000
     ---END---
@@ -46,9 +47,11 @@ ARGS = list(sys.argv[1:])
 ONLY = set(ARGS[ARGS.index("--only") + 1].split(",")) if "--only" in ARGS else None
 NO_GOLDEN = "--no-golden" in ARGS
 FULL = "--full" in ARGS
-NO_LINKS = "--no-links" in ARGS
-# 提交材料的死链检查是纯离线检查（不碰站点），放进这道门最划算：改完文档随手就跑到了
-LINKS_SCRIPT = os.path.join(os.path.dirname(HERE), "参赛方案", "tools", "check-links.py")
+# 材料侧两道离线检查：死链、隐私口径。都不碰站点，放进这道门最划算——改完文档随手就跑到了
+NO_OFFLINE = ("--no-offline" in ARGS) or ("--no-links" in ARGS)
+TOOLS_DIR = os.path.join(os.path.dirname(HERE), "参赛方案", "tools")
+LINKS_SCRIPT = os.path.join(TOOLS_DIR, "check-links.py")
+PRIVACY_SCRIPT = os.path.join(TOOLS_DIR, "check-privacy-claims.py")
 
 
 def site_code():
@@ -225,8 +228,12 @@ def main():
         return 2
 
     links_rc = None
-    if not NO_LINKS and os.path.exists(LINKS_SCRIPT):
-        links_rc = run_script(LINKS_SCRIPT)
+    privacy_rc = None
+    if not NO_OFFLINE:
+        if os.path.exists(LINKS_SCRIPT):
+            links_rc = run_script(LINKS_SCRIPT)
+        if os.path.exists(PRIVACY_SCRIPT):
+            privacy_rc = run_script(PRIVACY_SCRIPT)
 
     if not NO_GOLDEN:
         extra = ["--json", REPORT]
@@ -237,7 +244,8 @@ def main():
     if FULL:
         full_rc = run_child("finaltest_ready.py")
 
-    ok = (npass == ntotal and ntotal > 0) and (golden_rc in (None, 0)) and (links_rc in (None, 0))
+    ok = ((npass == ntotal and ntotal > 0) and (golden_rc in (None, 0))
+          and (links_rc in (None, 0)) and (privacy_rc in (None, 0)))
     print("\n" + "=" * 78)
     print("总耗时 %.1fs   站点 %s" % (time.time() - t0, SITE))
     if full_rc is not None:
@@ -245,6 +253,7 @@ def main():
     print("---SCORE_SUMMARY---")
     print("PATROL: %d/%d" % (npass, ntotal))
     print("LINKS: %s" % ("skipped" if links_rc is None else ("ok" if links_rc == 0 else "fail(%d)" % links_rc)))
+    print("PRIVACY: %s" % ("skipped" if privacy_rc is None else ("ok" if privacy_rc == 0 else "fail(%d)" % privacy_rc)))
     print("GOLDEN_EXIT: %s" % ("skipped" if golden_rc is None else golden_rc))
     print("SCORE: %s" % ("1.000" if ok else "0.000"))
     print("SITE: %s" % SITE)
